@@ -1,0 +1,666 @@
+"use client";
+
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+    User,
+    Briefcase,
+    Smartphone,
+    Camera,
+    ChevronRight,
+    ChevronLeft,
+    Check,
+    Mail,
+    Zap,
+    ShieldCheck,
+    ArrowRight,
+    CheckCircle,
+    FileText,
+    Tag,
+    Loader2
+} from "lucide-react";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+import { supabase } from "@/lib/supabase";
+import imageCompression from 'browser-image-compression';
+
+function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+}
+
+const steps = [
+    { id: 1, title: 'Básico', icon: User },
+    { id: 2, title: 'Perfil', icon: Briefcase },
+    { id: 3, title: 'Visual', icon: Camera },
+    { id: 4, title: 'Plan', icon: Zap },
+    { id: 5, title: 'Pago', icon: Smartphone },
+];
+
+export default function RegisterWizard() {
+    const [step, setStep] = useState(1);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        profession: '',
+        company: '',
+        whatsapp: '',
+        email: '',
+        bio: '',
+        categories: '',
+        plan: 'pro' as 'basic' | 'pro',
+        photo: null as File | null,
+        gallery: [] as File[],
+        receipt: null as File | null,
+    });
+
+    const [emailError, setEmailError] = useState('');
+
+    const validateEmail = (email: string) => {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    };
+
+    const generateSlug = (nombre: string) => {
+        const cleanName = nombre
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "") // Quitar acentos
+            .replace(/[^a-z0-9]/g, "-") // Reemplazar no-alfanuméricos por guiones
+            .replace(/-+/g, "-") // Quitar guiones seguidos
+            .replace(/^-|-$/g, ""); // Quitar guiones al inicio/final
+
+        const shortId = Math.random().toString(36).substring(2, 6); // 4 caracteres aleatorios
+        return `${cleanName}-${shortId}`;
+    };
+
+    const compressAndUpload = async (file: File, bucket: string, path: string) => {
+        try {
+            let fileToUpload: File | Blob = file;
+
+            // Solo comprimir si es una imagen
+            if (file.type.startsWith('image/')) {
+                const options = {
+                    maxSizeMB: 0.5,
+                    maxWidthOrHeight: 1024,
+                    useWebWorker: true,
+                };
+                fileToUpload = await imageCompression(file, options);
+            }
+
+            const { data, error } = await supabase.storage
+                .from(bucket)
+                .upload(path, fileToUpload, { upsert: true });
+
+            if (error) throw error;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from(bucket)
+                .getPublicUrl(path);
+
+            return publicUrl;
+        } catch (err) {
+            console.error("Error uploading file:", err);
+            throw err; // Re-lanzar para que handleFinalSubmit lo capture y muestre el alert
+        }
+    };
+
+    const handleFinalSubmit = async () => {
+        setIsSubmitting(true);
+        try {
+            let photoUrl = null;
+            let galleryUrls: string[] = [];
+            let receiptUrl = null;
+
+            const timestamp = Date.now();
+
+            // 1. Verificar si ya existe el usuario para mantener el slug
+            const { data: existingUser } = await supabase
+                .from('RegistraYa_vcard_registros')
+                .select('slug, foto_url, comprobante_url, galeria_urls')
+                .eq('email', formData.email)
+                .single();
+
+            const slug = existingUser?.slug || generateSlug(formData.name);
+
+            // 2. Subir imágenes (solo si hay nuevas)
+            if (formData.photo) {
+                photoUrl = await compressAndUpload(formData.photo, 'vcards', `photos/${timestamp}-${formData.photo.name}`);
+            } else if (existingUser) {
+                photoUrl = existingUser.foto_url;
+            }
+
+            if (formData.receipt) {
+                receiptUrl = await compressAndUpload(formData.receipt, 'vcards', `receipts/${timestamp}-${formData.receipt.name}`);
+            } else if (existingUser) {
+                receiptUrl = existingUser.comprobante_url;
+            }
+
+            // 2b. Subir galería (solo si es Pro)
+            if (formData.plan === 'pro') {
+                if (formData.gallery.length > 0) {
+                    for (const file of formData.gallery) {
+                        const url = await compressAndUpload(file, 'vcards', `gallery/${timestamp}-${file.name}`);
+                        galleryUrls.push(url);
+                    }
+                } else if (existingUser) {
+                    galleryUrls = existingUser.galeria_urls || [];
+                }
+            }
+
+            // 3. UPSERT: Inserta o Actualiza por email
+            const { error } = await supabase
+                .from('RegistraYa_vcard_registros')
+                .upsert({
+                    nombre: formData.name,
+                    whatsapp: formData.whatsapp,
+                    email: formData.email,
+                    profesion: formData.profession,
+                    empresa: formData.company,
+                    bio: formData.bio,
+                    etiquetas: formData.categories,
+                    plan: formData.plan,
+                    foto_url: photoUrl,
+                    comprobante_url: receiptUrl,
+                    galeria_urls: galleryUrls,
+                    status: 'pendiente',
+                    slug: slug
+                }, { onConflict: 'email' });
+
+            if (error) throw error;
+            setStep(6);
+        } catch (err) {
+            alert("Hubo un error al guardar tu pedido. Por favor intenta de nuevo.");
+            console.error(err);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleNext = () => {
+        if (step === 1) {
+            if (!formData.name || !formData.whatsapp || !validateEmail(formData.email)) {
+                if (!validateEmail(formData.email)) setEmailError('Ingresa un correo válido');
+                return;
+            }
+            setEmailError('');
+        }
+        if (step === 2) {
+            if (!formData.profession) return;
+        }
+        if (step === 5) {
+            handleFinalSubmit();
+            return;
+        }
+        setStep(s => Math.min(s + 1, 6));
+    };
+
+    const handleBack = () => setStep(s => Math.max(s - 1, 1));
+
+    const updateForm = (field: string, value: any) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const currentPlanPrice = formData.plan === 'basic' ? 10 : 20;
+
+    return (
+        <div className="max-w-4xl mx-auto w-full px-4">
+            {/* Progress Bar */}
+            <div className="mb-12 relative">
+                <div className="flex justify-between items-center relative z-10">
+                    {steps.map((s) => (
+                        <div key={s.id} className="flex flex-col items-center group">
+                            <div
+                                className={cn(
+                                    "w-10 h-10 md:w-14 md:h-14 rounded-2xl flex items-center justify-center transition-all duration-500 shadow-lg",
+                                    step >= s.id ? "bg-primary text-white scale-110" : "bg-white text-navy/20"
+                                )}
+                            >
+                                <s.icon size={20} className="md:w-6 md:h-6" />
+                            </div>
+                            <span className={cn(
+                                "mt-4 text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] transition-colors",
+                                step >= s.id ? "text-navy" : "text-navy/20"
+                            )}>
+                                {s.title}
+                            </span>
+                        </div>
+                    ))}
+                </div>
+                <div className="absolute top-5 md:top-7 left-0 h-1 bg-navy/5 w-full -z-0 rounded-full overflow-hidden">
+                    <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${((step - 1) / (steps.length - 1)) * 100}%` }}
+                        className="h-full bg-primary"
+                    />
+                </div>
+            </div>
+
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={step}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.3 }}
+                    className={cn(
+                        "rounded-[40px] shadow-2xl overflow-hidden min-h-[550px] border border-white/20 relative",
+                        step === 4 || step === 5 ? "bg-navy" : "glass-card p-8 md:p-12"
+                    )}
+                >
+                    {isSubmitting && (
+                        <div className="absolute inset-0 z-50 bg-navy/80 backdrop-blur-sm flex flex-col items-center justify-center text-white">
+                            <Loader2 className="animate-spin text-primary mb-6" size={60} />
+                            <h3 className="text-2xl font-black uppercase italic tracking-tighter">Procesando tu orden...</h3>
+                            <p className="text-white/60 font-medium mt-2">Personalizando tu identidad digital </p>
+                        </div>
+                    )}
+
+                    {/* STEP 1: DATOS BÁSICOS */}
+                    {step === 1 && (
+                        <div className="max-w-xl mx-auto">
+                            <div className="text-center mb-10">
+                                <h2 className="text-3xl md:text-4xl font-black text-navy tracking-tighter uppercase italic">¡Empecemos!</h2>
+                                <p className="text-navy/40 text-xs font-bold uppercase tracking-widest mt-2">Tus datos de contacto primarios</p>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div className="bg-primary/5 border border-primary/20 rounded-3xl p-6 mb-8">
+                                    <div className="flex gap-4 items-start">
+                                        <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                                            <ShieldCheck className="text-primary" size={20} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Tu Llave de Identidad</p>
+                                            <p className="text-[11px] font-bold text-navy/60 leading-relaxed uppercase italic">
+                                                Tu <span className="text-navy font-black">Email</span> y <span className="text-navy font-black">WhatsApp</span> son sagrados. Úsalos siempre igual para actualizar tu perfil sin cambiar tu link.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="group">
+                                    <label className="block text-[10px] font-black text-navy/40 uppercase tracking-widest mb-3 ml-1">Nombre Completo</label>
+                                    <div className="relative">
+                                        <User className="absolute left-6 top-1/2 -translate-y-1/2 text-navy/20 group-focus-within:text-primary transition-colors" size={20} />
+                                        <input
+                                            type="text"
+                                            value={formData.name}
+                                            onChange={(e) => updateForm('name', e.target.value)}
+                                            placeholder="Ej. Manuel Pérez"
+                                            className="w-full bg-white/50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-16 py-5 outline-none font-bold text-navy transition-all shadow-sm"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="group">
+                                    <label className="block text-[10px] font-black text-navy/40 uppercase tracking-widest mb-3 ml-1">WhatsApp</label>
+                                    <div className="relative">
+                                        <Smartphone className="absolute left-6 top-1/2 -translate-y-1/2 text-navy/20 group-focus-within:text-primary transition-colors" size={20} />
+                                        <input
+                                            type="tel"
+                                            value={formData.whatsapp}
+                                            onChange={(e) => updateForm('whatsapp', e.target.value)}
+                                            placeholder="+593 99 999 9999"
+                                            className="w-full bg-white/50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-16 py-5 outline-none font-bold text-navy transition-all shadow-sm"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="group">
+                                    <label className="block text-[10px] font-black text-navy/40 uppercase tracking-widest mb-3 ml-1">Correo Electrónico (Para entrega)</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-navy/20 group-focus-within:text-primary transition-colors" size={20} />
+                                        <input
+                                            type="email"
+                                            value={formData.email}
+                                            onChange={(e) => updateForm('email', e.target.value)}
+                                            placeholder="ejemplo@correo.com"
+                                            className={cn(
+                                                "w-full bg-white/50 border-2 rounded-2xl px-16 py-5 outline-none font-bold text-navy transition-all shadow-sm",
+                                                emailError ? "border-red-500 bg-red-50/50" : "border-transparent focus:border-primary/20"
+                                            )}
+                                        />
+                                    </div>
+                                    {emailError && <p className="mt-2 text-[10px] font-black text-red-500 uppercase italic tracking-widest ml-1">{emailError}</p>}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* STEP 2: PERFIL PROFESIONAL */}
+                    {step === 2 && (
+                        <div className="max-w-xl mx-auto">
+                            <div className="text-center mb-10">
+                                <h2 className="text-3xl md:text-4xl font-black text-navy tracking-tighter uppercase italic">Perfil Profesional</h2>
+                                <p className="text-navy/40 text-xs font-bold uppercase tracking-widest mt-2">Cómo quieres aparecer en las búsquedas</p>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-navy/40 uppercase tracking-widest mb-3">Profesión / Título</label>
+                                        <input
+                                            type="text"
+                                            value={formData.profession}
+                                            onChange={(e) => updateForm('profession', e.target.value)}
+                                            placeholder="Ej. Plomero Maestro"
+                                            className="w-full bg-white/50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-6 py-5 outline-none font-bold text-navy transition-all shadow-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-navy/40 uppercase tracking-widest mb-3">Empresa (Opcional)</label>
+                                        <input
+                                            type="text"
+                                            value={formData.company}
+                                            onChange={(e) => updateForm('company', e.target.value)}
+                                            placeholder="Nombre de tu negocio"
+                                            className="w-full bg-white/50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-6 py-5 outline-none font-bold text-navy transition-all shadow-sm"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black text-navy/40 uppercase tracking-widest mb-3">Tu Bio o Descripción</label>
+                                    <textarea
+                                        value={formData.bio}
+                                        onChange={(e) => updateForm('bio', e.target.value)}
+                                        placeholder="Cuéntales qué ofreces..."
+                                        rows={3}
+                                        className="w-full bg-white/50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-6 py-5 outline-none font-bold text-navy transition-all shadow-sm resize-none"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black text-navy/40 uppercase tracking-widest mb-3">Etiquetas de Búsqueda (Comas)</label>
+                                    <div className="relative">
+                                        <Tag className="absolute left-6 top-1/2 -translate-y-1/2 text-navy/20" size={20} />
+                                        <input
+                                            type="text"
+                                            value={formData.categories}
+                                            onChange={(e) => updateForm('categories', e.target.value)}
+                                            placeholder="ej. goteras, fugas, tuberías"
+                                            className="w-full bg-white/50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-16 py-5 outline-none font-bold text-navy transition-all shadow-sm"
+                                        />
+                                    </div>
+                                    <p className="text-[9px] font-bold text-navy/30 uppercase mt-2 tracking-widest">Lo que tus clientes escriben para buscarte</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* STEP 3: IDENTIDAD VISUAL */}
+                    {step === 3 && (
+                        <div className="max-w-xl mx-auto text-center">
+                            <div className="mb-10">
+                                <h2 className="text-3xl md:text-4xl font-black text-navy tracking-tighter uppercase italic">Identidad Visual</h2>
+                                <p className="text-navy/40 text-xs font-bold uppercase tracking-widest mt-2">Sube tu mejor foto o logo</p>
+                            </div>
+
+                            <div className="flex flex-col items-center gap-8">
+                                <div className="relative group">
+                                    <div className="w-48 h-48 md:w-56 md:h-56 rounded-[48px] bg-white border-4 border-dashed border-navy/10 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-all overflow-hidden relative shadow-inner">
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => updateForm('photo', e.target.files?.[0] || null)}
+                                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                        />
+                                        {formData.photo ? (
+                                            <img
+                                                src={URL.createObjectURL(formData.photo)}
+                                                alt="preview"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <>
+                                                <Camera className="text-navy/10 group-hover:text-primary transition-colors mb-4" size={56} strokeWidth={1.5} />
+                                                <span className="text-[10px] font-black text-navy/40 uppercase tracking-widest">Subir Imagen</span>
+                                            </>
+                                        )}
+                                    </div>
+                                    {formData.photo && (
+                                        <button
+                                            onClick={() => updateForm('photo', null)}
+                                            className="absolute -top-3 -right-3 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg z-20 hover:scale-110 transition-transform"
+                                        >
+                                            ×
+                                        </button>
+                                    )}
+                                </div>
+                                <p className="text-sm text-navy/60 font-medium max-w-sm">
+                                    Una foto profesional o un logo claro aumenta tu confianza en un <span className="text-primary font-black">200%</span>.
+                                </p>
+
+                                {formData.plan === 'pro' && (
+                                    <div className="mt-8 pt-8 border-t border-navy/5 w-full">
+                                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-navy/40 mb-6">Galería de Trabajos (Plan Pro - Hasta 3 fotos)</h3>
+                                        <div className="grid grid-cols-3 gap-4">
+                                            {[0, 1, 2].map((i) => (
+                                                <div key={i} className="relative aspect-square rounded-2xl bg-white border-2 border-dashed border-navy/5 flex items-center justify-center overflow-hidden hover:border-primary/20 transition-all cursor-pointer group">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                const newGallery = [...formData.gallery];
+                                                                newGallery[i] = file;
+                                                                updateForm('gallery', newGallery);
+                                                            }
+                                                        }}
+                                                        className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                                    />
+                                                    {formData.gallery[i] ? (
+                                                        <>
+                                                            <img src={URL.createObjectURL(formData.gallery[i])} className="w-full h-full object-cover" />
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const newGallery = [...formData.gallery];
+                                                                    newGallery.splice(i, 1);
+                                                                    updateForm('gallery', newGallery);
+                                                                }}
+                                                                className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center z-20"
+                                                            >
+                                                                ×
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <Camera size={20} className="text-navy/10 group-hover:text-primary transition-colors" />
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* STEP 4: SELECCIÓN DE PLAN */}
+                    {step === 4 && (
+                        <div className="text-center text-white">
+                            <h2 className="text-3xl md:text-5xl font-black text-primary tracking-tighter uppercase italic mb-10">Confirma y Elige</h2>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center max-w-4xl mx-auto">
+                                {/* PREVIEW */}
+                                <div className="relative order-2 lg:order-1">
+                                    <div className="absolute -inset-10 bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
+                                    <div className="w-[280px] h-[500px] bg-white rounded-[48px] border-[12px] border-navy/90 mx-auto p-8 shadow-2xl relative z-10 overflow-hidden text-navy">
+                                        <div className="h-4 w-16 bg-navy/5 rounded-full mx-auto mb-10" />
+                                        <div className="flex flex-col items-center text-center">
+                                            <div className="w-24 h-24 rounded-[32px] bg-primary/5 border-2 border-primary/20 mb-6 overflow-hidden flex items-center justify-center">
+                                                {formData.photo ? (
+                                                    <img src={URL.createObjectURL(formData.photo)} className="w-full h-full object-cover" />
+                                                ) : <User className="text-primary/20" size={40} />}
+                                            </div>
+                                            <h4 className="text-xl font-black leading-none mb-1 text-navy">{formData.name || 'Tu Nombre'}</h4>
+                                            <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-8">{formData.profession || 'Tu Profesión'}</p>
+
+                                            <div className="w-full space-y-4">
+                                                <div className="flex items-center gap-3 p-3 bg-cream rounded-2xl border border-navy/5">
+                                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center"><Smartphone size={14} className="text-primary" /></div>
+                                                    <div className="h-2 w-20 bg-navy/10 rounded-full" />
+                                                </div>
+                                                <div className="flex items-center gap-3 p-3 bg-cream rounded-2xl border border-navy/5">
+                                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center"><Mail size={14} className="text-primary" /></div>
+                                                    <div className="h-2 w-24 bg-navy/10 rounded-full" />
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-12 w-full py-4 bg-primary rounded-2xl text-[10px] font-black text-white uppercase tracking-widest shadow-orange">Guardar Contacto</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* PLANES */}
+                                <div className="order-1 lg:order-2 space-y-4 text-left">
+                                    {[
+                                        { id: 'basic', title: 'Básico', price: '10', features: ['vCard Pro', 'Entrega 1hr'] },
+                                        { id: 'pro', title: 'Premium (Pro)', price: '20', features: ['Todo el Básico', 'Código QR Manual', 'Botón WhatsApp Directo'] }
+                                    ].map((p) => (
+                                        <motion.div
+                                            key={p.id}
+                                            onClick={() => updateForm('plan', p.id)}
+                                            className={cn(
+                                                "p-8 rounded-[36px] border-4 transition-all cursor-pointer relative",
+                                                formData.plan === p.id
+                                                    ? "border-primary bg-white/10 shadow-orange"
+                                                    : "border-white/5 bg-white/5 hover:border-white/10"
+                                            )}
+                                        >
+                                            {p.id === 'pro' && <div className="absolute -top-3 right-8 bg-primary text-white px-4 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">Recomendado</div>}
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h3 className="text-xl font-black uppercase tracking-tighter italic">{p.title}</h3>
+                                                <div className={cn("w-6 h-6 rounded-full border-2", formData.plan === p.id ? "bg-primary border-primary" : "border-white/20")} />
+                                            </div>
+                                            <p className="text-4xl font-black mb-6">${p.price}</p>
+                                            <ul className="space-y-2 opacity-40">
+                                                {p.features.map(f => <li key={f} className="text-[9px] font-bold uppercase tracking-widest">✓ {f}</li>)}
+                                            </ul>
+                                        </motion.div>
+                                    ))
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* STEP 5: PAGO */}
+                    {step === 5 && (
+                        <div className="max-w-xl mx-auto text-center text-white">
+                            <h2 className="text-3xl md:text-5xl font-black text-primary tracking-tighter uppercase italic mb-4">Finaliza tu Pago</h2>
+                            <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-10 italic">Inversión única de ${currentPlanPrice}</p>
+
+                            <div className="space-y-6 text-left">
+                                <div className="bg-white/5 p-8 rounded-[40px] border border-white/10 space-y-6 relative overflow-hidden group">
+                                    <div className="absolute -top-10 -right-10 text-white/5 group-hover:text-primary/5 transition-colors rotate-12"><Zap size={200} /></div>
+                                    <div className="grid grid-cols-2 gap-8 relative z-10">
+                                        <div>
+                                            <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Banco</p>
+                                            <p className="text-lg font-black">Pichincha</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Tipo</p>
+                                            <p className="text-lg font-black">Ahorros</p>
+                                        </div>
+                                        <div className="col-span-2">
+                                            <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Número de Cuenta</p>
+                                            <p className="text-3xl font-black tracking-tight text-primary">2201234567</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Cédula</p>
+                                            <p className="text-lg font-black">1712345678</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Nombre</p>
+                                            <p className="text-lg font-black">César Reyes</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black text-white/30 uppercase tracking-widest mb-4 ml-2">Sube tu comprobante de pago</label>
+                                    <div className="relative h-40 border-4 border-dashed border-white/10 rounded-[32px] flex flex-col items-center justify-center hover:border-primary/40 transition-all cursor-pointer group overflow-hidden">
+                                        <input
+                                            type="file"
+                                            accept="image/*,application/pdf"
+                                            onChange={(e) => updateForm('receipt', e.target.files?.[0] || null)}
+                                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                        />
+                                        {formData.receipt ? (
+                                            <div className="flex items-center gap-4 text-primary">
+                                                <CheckCircle size={32} />
+                                                <span className="text-sm font-black uppercase tracking-tighter italic">{formData.receipt.name}</span>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <Camera size={40} className="text-white/10 group-hover:text-primary transition-colors mb-2" />
+                                                <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Elegir Archivo</span>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SUCCESS STEP */}
+                    {step === 6 && (
+                        <div className="max-w-xl mx-auto text-center py-20 px-6">
+                            <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="w-24 h-24 bg-accent/20 text-accent rounded-full flex items-center justify-center mx-auto mb-10"
+                            >
+                                <CheckCircle size={56} strokeWidth={2.5} />
+                            </motion.div>
+                            <h2 className="text-4xl md:text-5xl font-black text-navy mb-6 tracking-tighter uppercase italic">¡Orden en Marcha!</h2>
+                            <p className="text-xl text-navy/60 font-medium leading-relaxed mb-12">
+                                Estamos configurando tu <span className="text-navy font-bold">vCard Estratégica</span>. En <span className="text-primary font-black">exactamente 1 hora</span> recibirás tu entrega por WhatsApp y Correo.
+                            </p>
+
+                            <div className="inline-flex items-center gap-6 p-8 bg-white rounded-[40px] shadow-soft border-2 border-primary/5">
+                                <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center shadow-orange">
+                                    <Zap size={32} />
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-black text-navy leading-none uppercase tracking-tighter italic text-2xl">Garantía 60 Minutos</p>
+                                    <p className="text-[10px] text-navy/40 mt-1 uppercase font-black tracking-widest">Si no está a tiempo, el servicio es GRATIS.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Navigation */}
+                    {step < 6 && (
+                        <div className="mt-12 flex justify-between items-center max-w-xl mx-auto">
+                            {step > 1 ? (
+                                <button
+                                    onClick={handleBack}
+                                    className={cn(
+                                        "px-10 py-5 rounded-button font-black text-xs uppercase tracking-widest transition-all",
+                                        step >= 4 ? "text-white/40 hover:text-white" : "text-navy/40 hover:text-navy"
+                                    )}
+                                >
+                                    ← Atrás
+                                </button>
+                            ) : <div />}
+
+                            <button
+                                onClick={handleNext}
+                                disabled={isSubmitting}
+                                className={cn(
+                                    "px-12 py-6 rounded-button font-black text-xl shadow-lg flex items-center gap-4 transition-all hover:scale-105 active:scale-95",
+                                    step >= 4 ? "bg-primary text-white shadow-orange" : "bg-navy text-white",
+                                    isSubmitting && "opacity-50 cursor-not-allowed"
+                                )}
+                            >
+                                {step === 5 ? (isSubmitting ? 'Procesando...' : 'Notificar Pago') : 'Siguiente'} <ArrowRight size={20} />
+                            </button>
+                        </div>
+                    )}
+                </motion.div>
+            </AnimatePresence>
+        </div>
+    );
+}
