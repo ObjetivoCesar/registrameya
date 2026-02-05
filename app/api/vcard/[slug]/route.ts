@@ -27,20 +27,45 @@ export async function GET(
             );
         }
 
-        // 2. Generar vCard con CATEGORÍAS
+        // 1b. Procesar foto si existe
+        let photoBlock = '';
+        if (user.foto_url) {
+            try {
+                const response = await fetch(user.foto_url);
+                if (response.ok) {
+                    const arrayBuffer = await response.arrayBuffer();
+                    const base64 = Buffer.from(arrayBuffer).toString('base64');
+                    // RFC 2426: Line folding (75 chars max, then CRLF + space)
+                    const folded = base64.match(/.{1,72}/g)?.join('\r\n ') || base64;
+                    photoBlock = `PHOTO;ENCODING=b;TYPE=JPEG:\r\n ${folded}`;
+                }
+            } catch (photoErr) {
+                console.error('Error fetching photo for vCard:', photoErr);
+                // Si falla la foto, el vCard se genera sin ella para no romper la descarga
+            }
+        }
+
+        // 1c. Formatear Notas con Galería
+        let noteContent = `${user.bio || ''} - Generado con RegistrameYa`;
+        if (user.galeria_urls && user.galeria_urls.length > 0) {
+            noteContent += `\n\nMis Trabajos:\n${user.galeria_urls.join('\n')}`;
+        }
+
+        // 2. Generar vCard con todos los campos
         const vcard = [
             'BEGIN:VCARD',
             'VERSION:3.0',
             `FN;CHARSET=UTF-8:${user.nombre}`,
             `N;CHARSET=UTF-8:${user.nombre.split(' ').reverse().join(';')};;;`,
-            `TITLE;CHARSET=UTF-8:${user.profesion}`,
-            `ORG;CHARSET=UTF-8:${user.empresa}`,
+            `TITLE;CHARSET=UTF-8:${user.profesion || ''}`,
+            `ORG;CHARSET=UTF-8:${user.empresa || ''}`,
             `TEL;TYPE=CELL,VOICE:${user.whatsapp}`,
             `EMAIL;TYPE=WORK,INTERNET:${user.email}`,
             `ADR;TYPE=WORK,POSTAL;CHARSET=UTF-8:;;${user.direccion || ''};;;;`,
             user.web ? `URL:${user.web}` : '',
-            `NOTE;CHARSET=UTF-8:${user.bio} - Generado con RegistrameYa`,
-            user.etiquetas ? `CATEGORIES:${user.etiquetas}` : '', // ← ETIQUETAS AQUÍ
+            `NOTE;CHARSET=UTF-8:${noteContent}`,
+            user.etiquetas ? `CATEGORIES:${user.etiquetas}` : '',
+            photoBlock, // Foto procesada
             user.instagram ? `X-SOCIALPROFILE;TYPE=instagram:${user.instagram}` : '',
             user.linkedin ? `X-SOCIALPROFILE;TYPE=linkedin:${user.linkedin}` : '',
             `X-SOCIALPROFILE;TYPE=whatsapp:https://wa.me/${user.whatsapp.replace(/[^0-9]/g, '')}`,
@@ -53,7 +78,7 @@ export async function GET(
             headers: {
                 'Content-Type': 'text/vcard;charset=utf-8',
                 'Content-Disposition': `attachment; filename="${slug}.vcf"`,
-                'Cache-Control': 'public, max-age=3600', // Cache por 1 hora
+                'Cache-Control': 'no-store, max-age=0', // Evitar cache para que cambios en fotos/datos se vean rápido
             },
         });
     } catch (err) {
