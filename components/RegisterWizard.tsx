@@ -149,7 +149,7 @@ export default function RegisterWizard() {
                 .from('registraya_vcard_registros')
                 .select('slug, foto_url, comprobante_url, galeria_urls')
                 .eq('email', formData.email)
-                .single();
+                .maybeSingle();
 
             const slug = existingUser?.slug || generateSlug(formData.name);
 
@@ -219,7 +219,7 @@ export default function RegisterWizard() {
             if (error) throw error;
             setStep(6);
         } catch (err) {
-            alert("Hubo un error al guardar tu pedido. Por favor intenta de nuevo.");
+            alert(`Hubo un error al guardar tu pedido: ${err instanceof Error ? err.message : JSON.stringify(err)}. Por favor intenta de nuevo o contáctanos.`);
             console.error(err);
         } finally {
             setIsSubmitting(false);
