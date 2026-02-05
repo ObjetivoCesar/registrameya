@@ -64,7 +64,7 @@ export default function AdminDashboard() {
         // NOTA: En producción, esto requiere auth.
         // Por ahora, traemos todo lo que el RLS permita (configurado para authenticated)
         const { data, error } = await supabase
-            .from('RegistraYa_vcard_registros')
+            .from('registraya_vcard_registros')
             .select('*')
             .order('created_at', { ascending: false });
 
@@ -78,7 +78,7 @@ export default function AdminDashboard() {
 
     const updateStatus = async (id: string, newStatus: string) => {
         const { error } = await supabase
-            .from('RegistraYa_vcard_registros')
+            .from('registraya_vcard_registros')
             .update({ status: newStatus })
             .eq('id', id);
 

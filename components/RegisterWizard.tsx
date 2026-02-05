@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     User,
@@ -68,6 +68,19 @@ export default function RegisterWizard() {
     });
 
     const [emailError, setEmailError] = useState('');
+    const [hasManualTags, setHasManualTags] = useState(false);
+
+    // Auto-suggest tags based on profession
+    useEffect(() => {
+        if (!hasManualTags) {
+            const profession = formData.profession.toLowerCase().trim();
+            // Buscar coincidencia exacta o parcial
+            const key = Object.keys(INDUSTRY_TAGS).find(k => profession.includes(k));
+            if (key) {
+                updateForm('categories', INDUSTRY_TAGS[key].join(', '));
+            }
+        }
+    }, [formData.profession, hasManualTags]);
 
     const validateEmail = (email: string) => {
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -129,7 +142,7 @@ export default function RegisterWizard() {
 
             // 1. Verificar si ya existe el usuario para mantener el slug
             const { data: existingUser } = await supabase
-                .from('RegistraYa_vcard_registros')
+                .from('registraya_vcard_registros')
                 .select('slug, foto_url, comprobante_url, galeria_urls')
                 .eq('email', formData.email)
                 .single();
@@ -163,7 +176,7 @@ export default function RegisterWizard() {
 
             // 3. UPSERT: Inserta o Actualiza por email
             const { error } = await supabase
-                .from('RegistraYa_vcard_registros')
+                .from('registraya_vcard_registros')
                 .upsert({
                     nombre: formData.name,
                     whatsapp: formData.whatsapp,
@@ -405,7 +418,10 @@ export default function RegisterWizard() {
                                         <input
                                             type="text"
                                             value={formData.categories}
-                                            onChange={(e) => updateForm('categories', e.target.value)}
+                                            onChange={(e) => {
+                                                updateForm('categories', e.target.value);
+                                                setHasManualTags(true);
+                                            }}
                                             placeholder="ej. goteras, fugas, tuberías"
                                             className="w-full bg-white/50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-16 py-5 outline-none font-bold text-navy transition-all shadow-sm"
                                         />
@@ -544,7 +560,7 @@ export default function RegisterWizard() {
                                 {/* PLANES */}
                                 <div className="order-1 lg:order-2 space-y-4 text-left">
                                     {[
-                                        { id: 'basic', title: 'Básico', price: '10', features: ['vCard Pro', 'Entrega 1hr'] },
+                                        { id: 'basic', title: 'Básico', price: '10', features: ['Tarjeta Digital Pro', 'Entrega 1hr'] },
                                         { id: 'pro', title: 'Premium (Pro)', price: '20', features: ['Todo el Básico', 'Código QR Manual', 'Botón WhatsApp Directo'] }
                                     ].map((p) => (
                                         <motion.div
@@ -645,7 +661,7 @@ export default function RegisterWizard() {
                             </motion.div>
                             <h2 className="text-4xl md:text-5xl font-black text-navy mb-6 tracking-tighter uppercase italic">¡Orden en Marcha!</h2>
                             <p className="text-xl text-navy/60 font-medium leading-relaxed mb-12">
-                                Estamos configurando tu <span className="text-navy font-bold">vCard Estratégica</span>. En <span className="text-primary font-black">exactamente 1 hora</span> recibirás tu entrega por WhatsApp y Correo.
+                                Estamos configurando tu <span className="text-navy font-bold">Tarjeta Digital de Presentación</span>. En <span className="text-primary font-black">exactamente 1 hora</span> recibirás tu entrega por WhatsApp y Correo.
                             </p>
 
                             <div className="inline-flex items-center gap-6 p-8 bg-white rounded-[40px] shadow-soft border-2 border-primary/5">

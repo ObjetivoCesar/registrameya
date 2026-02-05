@@ -105,7 +105,7 @@ export default function Home() {
             </div>
 
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-navy leading-[1.1] mb-8 tracking-tighter uppercase">
-              Pierdes <span className="text-primary italic">4 de cada 10</span> trabajos solo porque te olvidan.
+              Pierdes <span className="text-primary italic">4 de cada 10</span> trabajos solo porque <span className="text-primary">olvidan cómo te registraron</span>.
             </h1>
 
             <p className="text-lg md:text-xl text-navy/70 mb-10 leading-relaxed max-w-xl mx-auto lg:ml-0 font-medium">
@@ -145,7 +145,7 @@ export default function Home() {
               <div className="w-full h-full bg-cream rounded-[2.2rem] overflow-hidden relative flex flex-col">
                 <div className="px-6 pt-10 text-center">
                   <div className="w-24 h-24 rounded-full bg-primary mx-auto mb-6 border-4 border-white shadow-lg overflow-hidden relative">
-                    <img src="https://i.pravatar.cc/300?img=11" alt="pro" className="w-full h-full object-cover" />
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" alt="Manuel Pérez" className="w-full h-full object-cover" />
                   </div>
                   <h4 className="text-xl font-black text-navy mb-2">Manuel Pérez</h4>
                   <p className="text-[10px] font-black text-primary uppercase tracking-widest px-3 py-1 bg-primary/10 rounded-full inline-block">Plomero Maestro</p>
@@ -228,7 +228,7 @@ export default function Home() {
               <div className="w-full max-w-[280px] bg-white rounded-[48px] border-[12px] border-navy shadow-orange p-6 min-h-[480px] flex flex-col">
                 <div className="text-center mb-8">
                   <div className="w-24 h-24 rounded-full bg-primary mx-auto mb-6 border-4 border-cream shadow-lg overflow-hidden relative">
-                    <img src="https://i.pravatar.cc/300?img=11" alt="pro" className="w-full h-full object-cover" />
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" alt="Manuel Pérez" className="w-full h-full object-cover" />
                   </div>
                   <h4 className="text-xl font-black text-navy">Manuel Pérez</h4>
                   <p className="text-[10px] font-black text-primary uppercase mt-2">Plomero Maestro</p>
@@ -320,7 +320,8 @@ export default function Home() {
                 <div className="bg-navy p-12 rounded-[40px] text-center text-white shadow-orange relative group overflow-hidden">
                   <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                   <p className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-4">Pérdida Anual Estimada</p>
-                  <p className="text-7xl font-black text-primary mb-6">${annualLoss}</p>
+                  <p className="text-4xl md:text-7xl font-black text-primary mb-6 break-words overflow-hidden leading-none">${annualLoss}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary/60 mt-4 italic">"Lo pagas con un solo trabajo que recuperes"</p>
                   <p className="text-xs italic opacity-70 leading-relaxed max-w-xs mx-auto">"Recuperas los $10 de hoy con el primer cliente que sí te encuentre mañana."</p>
                 </div>
               </div>
@@ -337,12 +338,21 @@ export default function Home() {
           </motion.div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {[
-              { name: "Básico", price: "10", features: ["vCard Estratégica", "Tu Foto de Perfil", "Categoría de Búsqueda", "Historial de Llamadas", "Entrega en 1 hora"] },
-              { name: "Pro", price: "20", featured: true, features: ["Todo el Básico", "Código QR para Imprimir", "Galería de 3 Fotos", "Botón WhatsApp Directo", "Diseño Premium", "Soporte Prioritario"] }
+              { name: "Básico", price: "10", originalPrice: "20", features: ["Tarjeta Digital Pro", "Tu Foto de Perfil", "Categoría de Búsqueda", "Historial de Llamadas", "Entrega en 1 hora"] },
+              { name: "Pro", price: "20", originalPrice: "40", featured: true, features: ["Todo el Básico", "Código QR para Imprimir", "Galería de 3 Fotos", "Botón WhatsApp Directo", "Diseño Premium", "Soporte Prioritario"] }
             ].map((plan) => (
               <motion.div key={plan.name} whileHover={{ y: -10 }} className={`bg-white p-12 rounded-[40px] flex flex-col shadow-soft border-4 ${plan.featured ? "border-primary" : "border-navy/5"}`}>
                 <h3 className={`text-xl font-black uppercase tracking-widest mb-4 ${plan.featured ? "text-primary" : "opacity-40"}`}>{plan.name}</h3>
-                <div className="flex items-baseline gap-1 mb-10"><span className="text-6xl font-black text-navy">${plan.price}</span><span className="text-navy/30 font-black uppercase text-xs">Pago Único</span></div>
+                <div className="flex items-baseline gap-2 mb-10">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-navy/30 line-through uppercase">Antes ${plan.originalPrice}</span>
+                    <span className="text-6xl font-black text-navy">${plan.price}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-navy/30 font-black uppercase text-xs tracking-tighter">Pago Único*</span>
+                    <span className="text-[8px] text-navy/20 font-bold leading-none mt-1">*Mantenimiento $1.50/año (desde el 2do año)</span>
+                  </div>
+                </div>
                 <ul className="space-y-5 mb-12 flex-grow">
                   {plan.features.map(f => <li key={f} className="flex items-center gap-4 text-navy/70 font-bold"><CheckCircle2 size={20} className="text-primary" /> {f}</li>)}
                 </ul>
@@ -361,12 +371,12 @@ export default function Home() {
           </motion.div>
           <div className="space-y-6">
             {[
-              { q: "¿Tengo que seguir pagando después?", a: "Absolutamente no. Pagas una vez $10 o $20 y tienes tu contacto profesional para siempre. Sin mensualidades, sin trucos." },
-              { q: "¿Cómo lo recibo?", a: "En exactamente 1 hora desde que confirmas tu pago, te enviamos un enlace a tu WhatsApp o correo con tu vCard y tu QR manual. Listo para usar." },
+              { q: "¿Tengo que seguir pagando después?", a: "El pago inicial es por la creación de tu tarjeta. A partir del segundo año, solo cobramos un mantenimiento mínimo de $1.50 anual por renovación de hosting para mantener tu tarjeta y QR activos. Sin trucos." },
+              { q: "¿Cómo lo recibo?", a: "En exactamente 1 hora desde que confirmas tu pago, te enviamos un email con el enlace a tu tarjeta digital y tus archivos de impresión. ¡Listo para usar!" },
               { q: "¿Y si no sé nada de tecnología?", a: "No necesitas saber nada. Nosotros hacemos todo el trabajo pesado por ti. Tú solo nos pasas tus datos y listo." },
               { q: "¿Sirve para Android y iPhone?", a: "Sí, funciona perfectamente en todos los celulares modernos. Es tecnología nativa que no requiere descargar apps." },
-              { q: "¿Puedo actualizar mis datos después?", a: "¡Claro! Los primeros 3 meses de cambios son gratuitos. Luego tiene un costo mínimo de $5 por actualización." },
-              { q: "¿Cómo me ayuda a conseguir más trabajo?", a: "No es magia, es visibilidad. Cuando un cliente necesite un experto y busque en su agenda, aparecerás tú con nombre, foto y profesión, en lugar de un número anónimo." }
+              { q: "¿Puedo actualizar mis datos después?", a: "¡Claro! El primer cambio es totalmente gratuito. Luego, cada actualización tiene un costo mínimo de $5." },
+              { q: "¿Cómo me ayuda a conseguir más trabajo?", a: "Imagina que publicas tu QR en tus redes o lo pegas en lugares estratégicos. Alguien lo escanea y, en segundos, tiene tu foto y contacto en su agenda. Dejas de ser un volante olvidado para ser un contacto real." }
             ].map((item, i) => (
               <details key={i} className="group glass-card rounded-3xl p-8 cursor-pointer border-navy/5 bg-white/50 backdrop-blur-sm">
                 <summary className="flex items-center justify-between font-black text-navy list-none text-lg">

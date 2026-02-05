@@ -14,8 +14,30 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Regístame Ya! - Tu Contacto Profesional en 1 Clic",
-  description: "Deja de perder trabajos porque tus clientes te olvidan. Configuramos tu contacto estratégico para que siempre aparezcas primero.",
+  title: "Regístrame Ya! - Tu Contacto Profesional en 1 Clic",
+  description: "Deja de perder trabajos porque olviden cómo te registraron. Configuramos tu contacto estratégico para que siempre aparezcas primero.",
+  openGraph: {
+    title: "Regístrame Ya! - Tu Contacto Profesional en 1 Clic",
+    description: "Deja de ser un número anónimo. Asegura que tus clientes siempre te encuentren con tu foto y profesión.",
+    url: "https://registrameya.com",
+    siteName: "Regístrame Ya!",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Regístrame Ya! - Tarjetas Digitales Profesionales",
+      },
+    ],
+    locale: "es_EC",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Regístrame Ya! - Tu Contacto Profesional en 1 Clic",
+    description: "Deja de perder trabajos porque olviden cómo te registraron.",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({

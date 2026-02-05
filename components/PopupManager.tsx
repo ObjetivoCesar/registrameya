@@ -68,7 +68,7 @@ export default function PopupManager() {
                         <p className="text-navy/60 font-medium mb-8">¿Sabes cuántos trabajos perdiste este mes solo porque no encontraron tu número en la lista de contactos?</p>
                         <div className="space-y-3">
                             <button
-                                onClick={() => handleWhatsAppRedirect("Hola, creo que estoy perdiendo trabajos por mi contacto actual. Quiero una vCard.")}
+                                onClick={() => handleWhatsAppRedirect("Hola, creo que estoy perdiendo trabajos por mi contacto actual. Quiero mi tarjeta digital.")}
                                 className="w-full py-4 bg-primary text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-orange hover:scale-105 transition-transform"
                             >
                                 Probablemente varios... ¡Ayúdame!
@@ -123,13 +123,27 @@ export default function PopupManager() {
                         <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-6 animate-bounce">
                             <Zap className="text-primary" size={32} />
                         </div>
-                        <h3 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter italic">🎁 Oferta Flash</h3>
-                        <p className="text-white/80 font-bold mb-8 leading-tight">Te veo interesado. Hoy tu Tarjeta Profesional PRO por solo <span className="text-white text-2xl font-black">$8</span> (en lugar de $10).</p>
+                        <h3 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter italic">⚡ Oferta Flash</h3>
+                        <p className="text-white/80 font-bold mb-8 leading-tight">Te veo interesado. Hoy tu vCard Profesional con un <span className="text-white text-2xl font-black">20% de Descuento</span>.</p>
+
+                        <div className="grid grid-cols-2 gap-4 mb-8">
+                            <div className="bg-white/10 p-4 rounded-2xl border border-white/20">
+                                <p className="text-[10px] text-white/60 uppercase font-black mb-1">Básico</p>
+                                <p className="text-2xl font-black text-white leading-none">$10</p>
+                                <p className="text-[8px] text-white/40 line-through">Antes $20</p>
+                            </div>
+                            <div className="bg-white/20 p-4 rounded-2xl border border-white/40 shadow-lg">
+                                <p className="text-[10px] text-primary uppercase font-black mb-1 bg-white px-2 py-0.5 rounded-full inline-block">Pro + QR</p>
+                                <p className="text-2xl font-black text-white leading-none">$20</p>
+                                <p className="text-[8px] text-white/40 line-through">Antes $40</p>
+                            </div>
+                        </div>
+
                         <button
-                            onClick={() => handleWhatsAppRedirect("Quiero mi Tarjeta Profesional con la Oferta de Lanzamiento ($8)")}
+                            onClick={() => handleWhatsAppRedirect("¡Hola! Quiero activar mi tarjeta profesional con la Oferta de Lanzamiento (Básico $10 / Pro $20)")}
                             className="w-full py-5 bg-white text-primary rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:scale-105 transition-transform"
                         >
-                            Reclamar Descuento de $2
+                            Lo pago con un solo trabajo
                         </button>
                     </motion.div>
                 </div>

@@ -9,21 +9,24 @@
 - **Mejoras Visuales**: Se inyectaron gradientes dinámicos, sombras profundas y elementos decorativos para dar profundidad y una sensación premium al diseño (reduciendo el exceso de blanco).
 - **Estrategia de Despliegue**: Se cambió el proyecto a modo `output: 'export'` en `next.config.ts` para facilitar la subida a cPanel sin configurar Node.js.
 
-## 2. El Bloqueo Actual
-La carpeta raíz tiene una tilde en "códigos". Esto hace que el compilador `Turbopack` de Next.js falle en Windows con el error: `byte index 67 is not a char boundary`.
-**Acción del Usuario:** Cambiará el nombre de la carpeta raíz a `Generador de Vcard y codigos QR` (sin tilde).
+## 2. El Bloqueo de Supabase (Resuelto en Código)
+Se detectó que la tabla en Supabase usa el nombre `registraya_vcard_registros` (en minúsculas), pero el código usaba una mezcla de mayúsculas. Además, la operación `upsert` fallaba para usuarios existentes porque la política RLS solo permitía `INSERT` público, no `UPDATE`.
 
-## 3. Próximos Pasos (Para el siguiente Antigravity)
-Una vez que el usuario regrese con la carpeta renombrada:
+**Acciones tomadas:**
+1.  **Estandarización**: Se cambió el nombre de la tabla a `registraya_vcard_registros` en todos los archivos (`RegisterWizard.tsx`, `VCardClient.tsx`, `admin/page.tsx`).
+2.  **RLS Corregido**: Se actualizó `supabase_setup.sql` para incluir una política que permite `UPDATE` público si el estado es `pendiente`.
 
-1.  **Generar la carpeta de salida (Build):**
+## 3. Próximos Pasos
+Una vez que el usuario regrese:
+
+1.  **Actualizar Supabase**: El usuario debe copiar y ejecutar el contenido de `supabase_setup.sql` en el SQL Editor de Supabase para aplicar las nuevas políticas y asegurar que la tabla esté en minúsculas.
+2.  **Verificar Variables**: Confirmar que `NEXT_PUBLIC_SUPABASE_ANON_KEY` sea efectivamente el "anon public" key (normalmente empieza con `eyJ...`).
+3.  **Generar el Build**:
     ```powershell
     cd vcard-app
     npm run build
     ```
-2.  **Verificar la carpeta `out`:** Asegurarse de que todos los archivos estáticos se hayan generado correctamente.
-3.  **Guía de Subida:** Indicar al usuario que suba el contenido de `out/` a `public_html` en su cPanel.
-4.  **Verificación Final:** Probar que el flujo de registro y la visualización de vCards (incluida la nueva galería Pro) funcionen en el servidor real.
+4.  **Despliegue**: Subir `out/` a cPanel.
 
 ## 4. Notas Técnicas Importantes
 - **Base de Datos**: Se añadió `galeria_urls TEXT[] DEFAULT '{}'` a `RegistraYa_vcard_registros`.

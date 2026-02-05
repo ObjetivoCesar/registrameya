@@ -3,8 +3,8 @@
 -- Habilitar extensión UUID si no está (normalmente lo está)
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Crear tabla de registros (case-insensitive sin comillas)
-CREATE TABLE IF NOT EXISTS RegistraYa_vcard_registros (
+-- Crear tabla de registros (usamos minúsculas para evitar problemas de casing)
+CREATE TABLE IF NOT EXISTS registraya_vcard_registros (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     slug TEXT UNIQUE, -- URL amigable ej: cesar-reyes-123
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -24,36 +24,42 @@ CREATE TABLE IF NOT EXISTS RegistraYa_vcard_registros (
 );
 
 -- Habilitar Row Level Security (RLS)
-ALTER TABLE RegistraYa_vcard_registros ENABLE ROW LEVEL SECURITY;
+ALTER TABLE registraya_vcard_registros ENABLE ROW LEVEL SECURITY;
 
--- Limpiar políticas previas para evitar errores de duplicidad
-DROP POLICY IF EXISTS "Permitir inserción pública" ON RegistraYa_vcard_registros;
-DROP POLICY IF EXISTS "Admin puede ver todo" ON RegistraYa_vcard_registros;
-DROP POLICY IF EXISTS "Público puede ver registro individual" ON RegistraYa_vcard_registros;
-DROP POLICY IF EXISTS "Admin puede actualizar" ON RegistraYa_vcard_registros;
+-- Limpiar políticas previas
+DROP POLICY IF EXISTS "Permitir inserción pública" ON registraya_vcard_registros;
+DROP POLICY IF EXISTS "Admin puede ver todo" ON registraya_vcard_registros;
+DROP POLICY IF EXISTS "Público puede ver registro individual" ON registraya_vcard_registros;
+DROP POLICY IF EXISTS "Admin puede actualizar" ON registraya_vcard_registros;
+DROP POLICY IF EXISTS "Permitir actualización pública de registros pendientes" ON registraya_vcard_registros;
 
 -- Crear políticas
 CREATE POLICY "Permitir inserción pública" 
-ON RegistraYa_vcard_registros FOR INSERT 
+ON registraya_vcard_registros FOR INSERT 
 WITH CHECK (nombre IS NOT NULL AND email IS NOT NULL AND whatsapp IS NOT NULL);
 
+CREATE POLICY "Permitir actualización pública de registros pendientes"
+ON registraya_vcard_registros FOR UPDATE
+USING (status = 'pendiente')
+WITH CHECK (status = 'pendiente');
+
 CREATE POLICY "Admin puede ver todo" 
-ON RegistraYa_vcard_registros FOR SELECT 
+ON registraya_vcard_registros FOR SELECT 
 USING (auth.role() = 'authenticated');
 
 CREATE POLICY "Público puede ver registro individual" 
-ON RegistraYa_vcard_registros FOR SELECT 
-USING (true); -- Permitimos leer registros individuales para el perfil público
+ON registraya_vcard_registros FOR SELECT 
+USING (true);
 
 CREATE POLICY "Admin puede actualizar" 
-ON RegistraYa_vcard_registros FOR UPDATE 
+ON registraya_vcard_registros FOR UPDATE 
 USING (auth.role() = 'authenticated');
 
 -- Indexar para búsquedas rápidas
-CREATE INDEX IF NOT EXISTS idx_v_registraya_email ON RegistraYa_vcard_registros(email);
-CREATE INDEX IF NOT EXISTS idx_v_registraya_whatsapp ON RegistraYa_vcard_registros(whatsapp);
-CREATE INDEX IF NOT EXISTS idx_v_registraya_status ON RegistraYa_vcard_registros(status);
-CREATE INDEX IF NOT EXISTS idx_v_registraya_slug ON RegistraYa_vcard_registros(slug);
+CREATE INDEX IF NOT EXISTS idx_v_registraya_email ON registraya_vcard_registros(email);
+CREATE INDEX IF NOT EXISTS idx_v_registraya_whatsapp ON registraya_vcard_registros(whatsapp);
+CREATE INDEX IF NOT EXISTS idx_v_registraya_status ON registraya_vcard_registros(status);
+CREATE INDEX IF NOT EXISTS idx_v_registraya_slug ON registraya_vcard_registros(slug);
 
 -- CONFIGURACIÓN DE STORAGE
 -- Es vital que el bucket se llame 'vcards'

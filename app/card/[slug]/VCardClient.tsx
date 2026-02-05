@@ -32,7 +32,7 @@ export default function VCardClient() {
     useEffect(() => {
         const fetchData = async () => {
             const { data: record, error } = await supabase
-                .from('RegistraYa_vcard_registros')
+                .from('registraya_vcard_registros')
                 .select('*')
                 .or(`slug.eq.${slug},id.eq.${slug}`)
                 .single();
