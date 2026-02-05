@@ -35,7 +35,7 @@ export default function Home() {
       <section className="relative w-full h-screen flex items-center justify-center bg-black overflow-hidden z-[60]">
         <div className="absolute inset-0 z-0">
           <iframe
-            className="w-full h-full scale-[1.5] pointer-events-none opacity-30 grayscale-[50%]"
+            className="w-full h-full scale-[1.5] pointer-events-none opacity-20 grayscale-[50%]"
             src="https://www.youtube.com/embed/c1gNsQjKZ_Q?autoplay=1&mute=1&controls=0&loop=1&playlist=c1gNsQjKZ_Q&showinfo=0&rel=0&iv_load_policy=3&modestbranding=1"
             allow="autoplay; encrypted-media"
           />

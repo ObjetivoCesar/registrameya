@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: '/images/social-preview.png',
+        url: '/images/logo.png',
         width: 1200,
         height: 630,
         alt: 'Regístrame Ya! Preview',
@@ -36,7 +36,10 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Regístrame Ya! - Tu Contacto Profesional en 1 Clic",
     description: "Deja de perder trabajos porque olviden cómo te registraron.",
-    images: ['/images/social-preview.png'],
+    images: ['/images/logo.png'],
+  },
+  icons: {
+    icon: '/images/logo.ico',
   },
 };
 
