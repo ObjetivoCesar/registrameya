@@ -16,7 +16,8 @@ import {
     LogOut,
     User,
     Image as ImageIcon,
-    FileText
+    FileText,
+    ShieldAlert
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -31,6 +32,32 @@ export default function AdminDashboard() {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("todos");
     const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
+    const [isAuthorized, setIsAuthorized] = useState(false);
+    const [accessKey, setAccessKey] = useState("");
+
+    useEffect(() => {
+        // En un escenario real, esto vendría de una sesión o JWT.
+        // Para Stage 1, usamos una "Shared Key" simple.
+        const storedKey = localStorage.getItem('admin_access_key');
+        if (storedKey === 'registrameya2026') {
+            setIsAuthorized(true);
+        }
+    }, []);
+
+    const handleLogin = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (accessKey === 'registrameya2026') {
+            localStorage.setItem('admin_access_key', 'registrameya2026');
+            setIsAuthorized(true);
+        } else {
+            alert("Clave incorrecta");
+        }
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('admin_access_key');
+        setIsAuthorized(false);
+    };
 
     const fetchRegistros = async () => {
         setLoading(true);
@@ -68,6 +95,35 @@ export default function AdminDashboard() {
         return matchesSearch && matchesStatus;
     });
 
+    if (!isAuthorized) {
+        return (
+            <div className="min-h-screen bg-navy flex items-center justify-center p-6">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="max-w-md w-full glass-card p-12 text-center"
+                >
+                    <div className="w-20 h-20 bg-primary/20 text-primary rounded-full flex items-center justify-center mx-auto mb-8">
+                        <ShieldAlert size={40} />
+                    </div>
+                    <h2 className="text-2xl font-black uppercase italic tracking-tighter mb-8">Acceso Restringido</h2>
+                    <form onSubmit={handleLogin} className="space-y-6">
+                        <input
+                            type="password"
+                            placeholder="Ingrese Clave de Acceso"
+                            value={accessKey}
+                            onChange={(e) => setAccessKey(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-primary/40 text-center font-bold"
+                        />
+                        <button type="submit" className="w-full bg-primary py-4 rounded-2xl font-black uppercase tracking-widest shadow-orange">
+                            Entrar
+                        </button>
+                    </form>
+                </motion.div>
+            </div>
+        );
+    }
+
     if (loading && registros.length === 0) {
         return (
             <div className="min-h-screen bg-navy flex items-center justify-center">
@@ -89,9 +145,12 @@ export default function AdminDashboard() {
                         <button onClick={fetchRegistros} className="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all">
                             <RefreshCw size={20} className={cn(loading && "animate-spin")} />
                         </button>
-                        <div className="bg-primary px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-orange cursor-pointer">
+                        <button
+                            onClick={handleLogout}
+                            className="bg-primary px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-orange cursor-pointer hover:scale-105 transition-all"
+                        >
                             Cerrar Sesión
-                        </div>
+                        </button>
                     </div>
                 </header>
 

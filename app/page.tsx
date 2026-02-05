@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { CheckCircle, MessageSquare, ShieldCheck, Zap, ArrowRight, Smartphone, Search, Camera, ChevronRight } from "lucide-react";
+import { CheckCircle, MessageSquare, ShieldCheck, Zap, ArrowRight, Smartphone, Search, Camera, ChevronRight, Play } from "lucide-react";
 import Image from "next/image";
 
 export default function Home() {
@@ -11,8 +11,68 @@ export default function Home() {
   // Cálculo: Clientes * 12 meses * Valor * 0.4 (40% de pérdida por olvido)
   const annualLoss = Math.round(clients * 12 * avgValue * 0.4).toLocaleString();
 
+  const typingText = "Esto es lo que necesitas";
+
   return (
     <main className="min-h-screen bg-background selection:bg-primary/30 scroll-smooth relative overflow-hidden">
+      {/* Video Pre-Hero (Ante-sala) */}
+      <section className="relative w-full h-screen flex items-center justify-center bg-black overflow-hidden z-[60]">
+        <div className="absolute inset-0 z-0">
+          <iframe
+            className="w-full h-full scale-[1.5] pointer-events-none opacity-30 grayscale-[50%]"
+            src="https://www.youtube.com/embed/c1gNsQjKZ_Q?autoplay=1&mute=1&controls=0&loop=1&playlist=c1gNsQjKZ_Q&showinfo=0&rel=0&iv_load_policy=3&modestbranding=1"
+            allow="autoplay; encrypted-media"
+          />
+          {/* Overlay gradiente para mejorar legibilidad */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/60" />
+        </div>
+
+        <div className="relative z-10 text-center px-6">
+          <motion.h1
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-4xl md:text-7xl font-black text-white uppercase italic tracking-tighter mb-12 drop-shadow-2xl"
+          >
+            {typingText.split("").map((char, index) => (
+              <motion.span
+                key={index}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{
+                  duration: 0.1,
+                  delay: index * 0.1,
+                }}
+              >
+                {char}
+              </motion.span>
+            ))}
+          </motion.h1>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 3, duration: 1 }}
+          >
+            <a
+              href="#hero"
+              className="inline-flex items-center gap-4 bg-primary text-white px-10 py-5 rounded-full font-black text-lg shadow-orange hover:scale-110 transition-transform group"
+            >
+              DESCUBRIR <ArrowRight className="group-hover:translate-x-2 transition-transform" />
+            </a>
+          </motion.div>
+        </div>
+
+        {/* Indicador de scroll */}
+        <motion.div
+          animate={{ y: [0, 10, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="absolute bottom-10 left-1/2 -translate-x-1/2 text-white/50"
+        >
+          <div className="w-6 h-10 border-2 border-white/20 rounded-full flex justify-center p-1">
+            <div className="w-1 h-2 bg-primary rounded-full" />
+          </div>
+        </motion.div>
+      </section>
       {/* Elementos vibrantes de fondo */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20">
         <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[60%] bg-primary/30 blur-[150px] rounded-full" />
@@ -35,7 +95,7 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-24 md:pt-32 pb-16 md:pb-24 overflow-hidden">
+      <section id="hero" className="relative pt-24 md:pt-32 pb-16 md:pb-24 overflow-hidden">
         {/* Decoración Background */}
         <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[80%] bg-primary/10 blur-[120px] rounded-full pointer-events-none" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[60%] bg-primary/5 blur-[100px] rounded-full pointer-events-none" />
@@ -98,32 +158,71 @@ export default function Home() {
             </div>
           </motion.div>
 
-          {/* Imagen Hero / Mockup */}
+          {/* Mockup Samsung CSS (Alta Fidelidad) */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1 }}
-            className="relative flex justify-center lg:justify-end"
+            initial={{ opacity: 0, scale: 0.9, x: 20 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            transition={{ duration: 1, delay: 0.2 }}
+            className="relative flex justify-center lg:justify-end w-full"
           >
-            <div className="relative z-10 max-w-[450px] w-full">
-              <Image
-                src="/hero-person.png"
-                alt="Especialista profesional"
-                width={600}
-                height={800}
-                className="w-full h-auto drop-shadow-2xl hero-float"
-                priority
-              />
+            <div className="relative z-10 w-full max-w-[320px] aspect-[9/19.5] bg-navy rounded-[3rem] p-3 shadow-2xl border-[8px] border-navy/90 hero-float">
+              {/* Pantalla Interna */}
+              <div className="w-full h-full bg-cream rounded-[2.2rem] overflow-hidden relative flex flex-col">
+                {/* Status Bar */}
+                <div className="h-6 w-full flex justify-between items-center px-6 pt-2 opacity-30">
+                  <span className="text-[10px] font-black">9:41</span>
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full border border-navy" />
+                    <div className="w-3 h-3 rounded-full bg-navy/20" />
+                  </div>
+                </div>
+
+                {/* Profile Section */}
+                <div className="px-6 pt-8 text-center">
+                  <div className="w-24 h-24 rounded-full bg-primary mx-auto mb-6 border-4 border-white shadow-lg overflow-hidden relative">
+                    <img src="https://i.pravatar.cc/300?img=11" alt="pro" className="w-full h-full object-cover" />
+                  </div>
+                  <h4 className="text-xl font-black text-navy leading-none mb-2">Manuel Pérez</h4>
+                  <p className="text-[10px] font-black text-primary uppercase tracking-widest px-3 py-1 bg-primary/10 rounded-full inline-block">Plomero Maestro</p>
+                </div>
+
+                {/* QR Section */}
+                <div className="flex-grow flex items-center justify-center p-8">
+                  <div className="w-full aspect-square bg-white rounded-3xl p-4 shadow-inner border border-navy/5 flex items-center justify-center relative group">
+                    <div className="w-full h-full bg-[url('https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=example')] bg-contain bg-no-repeat bg-center opacity-80" />
+                    <div className="absolute inset-0 bg-primary/5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Zap className="text-primary animate-pulse" size={40} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="px-6 pb-10 space-y-3">
+                  <div className="w-full py-4 bg-primary text-white rounded-2xl text-center text-[10px] font-black uppercase tracking-[0.2em] shadow-orange">
+                    Guardar Contacto
+                  </div>
+                  <div className="w-full py-4 bg-navy text-white rounded-2xl text-center text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2">
+                    <MessageSquare size={14} className="text-primary" /> WhatsApp
+                  </div>
+                </div>
+              </div>
+
+              {/* Botones Físicos Laterales */}
+              <div className="absolute right-[-10px] top-24 w-1.5 h-12 bg-navy rounded-r-lg" />
+              <div className="absolute right-[-10px] top-40 w-1.5 h-20 bg-navy rounded-r-lg" />
+
+              {/* Reflejos */}
+              <div className="absolute -inset-px rounded-[3.1rem] border border-white/20 pointer-events-none" />
             </div>
 
-            {/* Floatings */}
+            {/* Floatings Decorativos */}
             <motion.div
-              animate={{ x: [0, 10, 0] }}
-              transition={{ duration: 4, repeat: Infinity }}
-              className="absolute top-1/4 -left-4 md:-left-12 glass-card p-4 rounded-2xl z-20 flex items-center gap-4 border-primary/20"
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute -top-6 -right-6 glass-card p-4 rounded-2xl z-20 flex items-center gap-3 border-primary/20 shadow-orange"
             >
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white">✅</div>
-              <p className="text-xs font-black text-navy uppercase tracking-widest">¡Trabajo aceptado!</p>
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-xs">✨</div>
+              <p className="text-[10px] font-black text-navy uppercase tracking-widest whitespace-nowrap">Perfil Premium</p>
             </motion.div>
           </motion.div>
         </div>
@@ -145,19 +244,35 @@ export default function Home() {
             {/* Antes */}
             <div className="bg-navy/5 p-10 rounded-[40px] border border-navy/5 flex flex-col items-center">
               <div className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-8">El Olvido (Antes)</div>
-              <div className="w-full max-w-[260px] bg-white rounded-[40px] border-[10px] border-navy shadow-xl p-6 min-h-[380px]">
-                <div className="h-4 w-16 bg-navy/5 rounded-full mx-auto mb-8" />
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="flex items-center gap-3 mb-4 opacity-20">
-                    <div className="w-8 h-8 rounded-full bg-navy/10" />
-                    <div className="h-2 w-20 bg-navy/10 rounded-full" />
-                  </div>
-                ))}
-                <div className="flex items-center gap-3 p-3 bg-red-50 rounded-2xl border-2 border-red-100">
-                  <div className="w-8 h-8 rounded-full bg-navy/10 flex items-center justify-center text-lg">👷</div>
-                  <div>
-                    <p className="text-[10px] font-black text-navy italic">"Plomero" o "Juan"</p>
-                    <p className="text-[8px] text-navy/40 font-bold uppercase tracking-widest">¿Cúal de todos era?</p>
+              <div className="w-full max-w-[280px] bg-white rounded-[48px] border-[12px] border-navy shadow-xl p-6 min-h-[480px] flex flex-col relative overflow-hidden">
+                {/* Notch/Speaker */}
+                <div className="h-1.5 w-16 bg-navy/10 rounded-full mx-auto mb-8 shrink-0" />
+
+                {/* Agenda Crowded */}
+                <div className="space-y-4 flex-grow overflow-hidden relative">
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                    <div key={i} className="flex items-center gap-3 opacity-10">
+                      <div className="w-10 h-10 rounded-full bg-navy/20" />
+                      <div className="space-y-2">
+                        <div className="h-2 w-24 bg-navy/20 rounded-full" />
+                        <div className="h-1.5 w-16 bg-navy/10 rounded-full" />
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* El contacto perdido en el medio con efecto glass */}
+                  <div className="absolute inset-0 flex flex-col justify-center gap-4">
+                    <div className="h-20 w-full bg-white/40 backdrop-blur-md rounded-2xl border border-white/20 flex items-center gap-4 px-4 shadow-sm scale-110 z-10">
+                      <div className="w-12 h-12 rounded-full bg-navy/10 flex items-center justify-center text-2xl grayscale">👤</div>
+                      <div>
+                        <p className="text-xs font-black text-navy/40 italic">"Plomero" o "Juan"</p>
+                        <p className="text-[10px] text-navy/20 font-bold uppercase tracking-widest">¿Cúal de todos era?</p>
+                      </div>
+                    </div>
+                    <div className="h-16 w-full bg-white/20 backdrop-blur-sm rounded-2xl border border-white/10 flex items-center gap-4 px-4 opacity-40">
+                      <div className="w-10 h-10 rounded-full bg-navy/10" />
+                      <div className="h-2 w-20 bg-navy/10 rounded-full" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -167,28 +282,39 @@ export default function Home() {
             {/* Después */}
             <div className="bg-primary/5 p-10 rounded-[40px] border border-primary/20 flex flex-col items-center relative">
               <div className="text-[10px] font-black uppercase tracking-widest text-primary mb-8">Tu Marca (Después)</div>
-              <div className="w-full max-w-[260px] bg-white rounded-[40px] border-[10px] border-navy shadow-orange p-6 min-h-[380px]">
-                <div className="h-4 w-16 bg-navy/5 rounded-full mx-auto mb-8" />
-                <div className="text-center mb-6">
-                  <div className="w-20 h-20 rounded-full bg-primary mx-auto mb-4 border-4 border-cream shadow-lg overflow-hidden">
-                    <img src="https://i.pravatar.cc/300?img=11" alt="pro" />
-                  </div>
-                  <h4 className="font-black text-navy leading-none">Manuel Pérez</h4>
-                  <p className="text-[8px] font-black text-primary uppercase mt-1 tracking-widest">Plomero Maestro</p>
+              <div className="w-full max-w-[280px] bg-white rounded-[48px] border-[12px] border-navy shadow-orange p-6 min-h-[480px] flex flex-col">
+                <div className="h-1.5 w-16 bg-navy/10 rounded-full mx-auto mb-10 shrink-0" />
+                <div className="text-center mb-8">
+                  <motion.div
+                    initial={{ scale: 0.8 }}
+                    whileInView={{ scale: 1 }}
+                    className="w-24 h-24 rounded-full bg-primary mx-auto mb-6 border-4 border-cream shadow-lg overflow-hidden relative"
+                  >
+                    <img src="https://i.pravatar.cc/300?img=11" alt="pro" className="w-full h-full object-cover" />
+                  </motion.div>
+                  <h4 className="text-xl font-black text-navy leading-none">Manuel Pérez</h4>
+                  <p className="text-[10px] font-black text-primary uppercase mt-2 tracking-widest">Plomero Maestro</p>
                 </div>
-                <div className="space-y-3">
-                  <div className="p-3 bg-cream rounded-xl flex items-center gap-3 border border-primary/10">
-                    <MessageSquare size={14} className="text-primary" />
-                    <div className="h-1.5 w-16 bg-primary/20 rounded-full" />
+                <div className="space-y-4 flex-grow">
+                  <div className="p-4 bg-cream rounded-2xl flex items-center gap-4 border border-primary/10">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                      <MessageSquare size={16} />
+                    </div>
+                    <div className="h-2 w-24 bg-primary/20 rounded-full" />
                   </div>
-                  <div className="p-3 bg-cream rounded-xl flex items-center gap-3 border border-primary/10">
-                    <Smartphone size={14} className="text-primary" />
-                    <div className="h-1.5 w-20 bg-primary/20 rounded-full" />
+                  <div className="p-4 bg-cream rounded-2xl flex items-center gap-4 border border-primary/10">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                      <Smartphone size={16} />
+                    </div>
+                    <div className="h-2 w-28 bg-primary/20 rounded-full" />
                   </div>
                 </div>
-                <div className="mt-6 p-4 bg-primary text-white rounded-2xl text-center text-[10px] font-black uppercase tracking-widest shadow-orange">
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  className="mt-6 p-5 bg-primary text-white rounded-2xl text-center text-xs font-black uppercase tracking-[0.2em] shadow-orange cursor-pointer"
+                >
                   Llamar ahora
-                </div>
+                </motion.div>
               </div>
               <p className="mt-8 text-primary text-center font-black uppercase tracking-widest text-xs">Imposible de olvidar</p>
             </div>
@@ -197,41 +323,52 @@ export default function Home() {
       </section>
 
       {/* Beneficios Section */}
-      <section className="py-24 bg-cream">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="py-24 relative overflow-hidden bg-navy">
+        {/* Imagen de fondo con opacidad y overlay */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="https://images.unsplash.com/photo-1541123437800-1bb1317badc2?auto=format&fit=crop&q=80&w=2000"
+            alt="Comunidad"
+            fill
+            className="object-cover opacity-40 grayscale-[30%]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-navy/60 via-navy/40 to-navy" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <motion.div whileHover={{ y: -10 }} className="glass-card p-10 rounded-card">
-              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-8 shadow-soft">
-                <Search className="text-primary" size={32} />
+            <motion.div whileHover={{ y: -10 }} className="glass-card p-10 rounded-card bg-white/5 border-white/10 backdrop-blur-xl">
+              <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-8 shadow-orange">
+                <Search className="text-white" size={32} />
               </div>
-              <h3 className="text-2xl font-black text-navy mb-4 tracking-tighter uppercase">Buscan tu oficio y sales tú</h3>
-              <p className="text-navy/60 leading-relaxed font-medium">
+              <h3 className="text-2xl font-black text-white mb-4 tracking-tighter uppercase italic">Buscan tu oficio y sales tú</h3>
+              <p className="text-white/70 leading-relaxed font-medium">
                 Configuramos palabras clave estratégicas para que cuando busquen tu especialidad en su teléfono, aparezcas de primero.
               </p>
             </motion.div>
 
-            <motion.div whileHover={{ y: -10 }} className="glass-card p-10 rounded-card border-primary/10 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-4 text-primary/5 group-hover:text-primary/10 transition-colors">
+            <motion.div whileHover={{ y: -10 }} className="glass-card p-10 rounded-card bg-white/5 border-white/10 backdrop-blur-xl group overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 text-white/5 group-hover:text-primary/10 transition-colors">
                 <Camera size={80} />
               </div>
-              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-8 shadow-soft relative z-10">
-                <Camera className="text-primary" size={32} />
+              <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-8 shadow-orange relative z-10">
+                <Camera className="text-white" size={32} />
               </div>
-              <h3 className="text-2xl font-black text-navy mb-4 tracking-tighter uppercase relative z-10">Confianza al Instante</h3>
-              <p className="text-navy/60 leading-relaxed font-medium relative z-10">
+              <h3 className="text-2xl font-black text-white mb-4 tracking-tighter uppercase italic relative z-10">Confianza al Instante</h3>
+              <p className="text-white/70 leading-relaxed font-medium relative z-10">
                 Una foto profesional integrada hace que confíen en ti antes de hablarte. Te ves más pro y más confiable.
               </p>
             </motion.div>
 
-            <motion.div whileHover={{ y: -10 }} className="glass-card p-10 rounded-card border-royal/10 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-4 text-royal/5 group-hover:text-royal/10 transition-colors">
+            <motion.div whileHover={{ y: -10 }} className="glass-card p-10 rounded-card bg-white/5 border-white/10 backdrop-blur-xl group overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 text-white/5 group-hover:text-primary/10 transition-colors">
                 <Zap size={80} />
               </div>
-              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mb-8 shadow-soft relative z-10">
-                <Zap className="text-primary" size={32} />
+              <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-8 shadow-orange relative z-10">
+                <Zap className="text-white" size={32} />
               </div>
-              <h3 className="text-2xl font-black text-navy mb-4 tracking-tighter uppercase relative z-10">Galería Pro Incluida</h3>
-              <p className="text-navy/60 leading-relaxed font-medium relative z-10">
+              <h3 className="text-2xl font-black text-white mb-4 tracking-tighter uppercase italic relative z-10">Galería Pro Incluida</h3>
+              <p className="text-white/70 leading-relaxed font-medium relative z-10">
                 Muestra tus mejores 3 trabajos directamente en tu tarjeta. Tus clientes verán la calidad de lo que haces en segundos.
               </p>
             </motion.div>

@@ -36,6 +36,20 @@ const steps = [
     { id: 5, title: 'Pago', icon: Smartphone },
 ];
 
+const INDUSTRY_TAGS: Record<string, string[]> = {
+    'carpintero': ['Carpintería', 'Muebles', 'Madera', 'Reparaciones', 'Diseño'],
+    'plomero': ['Plomería', 'Tubería', 'Agua', 'Goteras', 'Filtración', 'Fontanero'],
+    'electricista': ['Electricidad', 'Luces', 'Cables', 'Cortocircuito', 'Instalaciones'],
+    'enfermera': ['Enfermería', 'Cuidado', 'Salud', 'Adultos', 'Niños', 'Curaciones'],
+    'enfermero': ['Enfermería', 'Cuidado', 'Salud', 'Adultos', 'Niños', 'Curaciones'],
+    'pastelero': ['Pastelería', 'Tortas', 'Dulces', 'Eventos', 'Fiestas', 'Repostería'],
+    'pastelera': ['Pastelería', 'Tortas', 'Dulces', 'Eventos', 'Fiestas', 'Repostería'],
+    'tecnico': ['Reparaciones', 'Servicio Técnico', 'Mantenimiento', 'Soporte'],
+    'abogado': ['Legal', 'Juicios', 'Asesoría', 'Derecho'],
+    'doctor': ['Salud', 'Medicina', 'Consulta', 'Médico'],
+    'odontologo': ['Dientes', 'Salud Bucal', 'Dentista', 'Limpieza'],
+};
+
 export default function RegisterWizard() {
     const [step, setStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -157,13 +171,28 @@ export default function RegisterWizard() {
                     profesion: formData.profession,
                     empresa: formData.company,
                     bio: formData.bio,
-                    etiquetas: formData.categories,
                     plan: formData.plan,
                     foto_url: photoUrl,
                     comprobante_url: receiptUrl,
                     galeria_urls: galleryUrls,
                     status: 'pendiente',
-                    slug: slug
+                    slug: slug,
+                    etiquetas: (() => {
+                        const profession = formData.profession.toLowerCase().trim();
+                        const extraTags = INDUSTRY_TAGS[profession] || [];
+                        const userTags = formData.categories.split(',').map(t => t.trim()).filter(Boolean);
+                        // Combinar y quitar duplicados case-insensitive
+                        const combinedCount = new Set([
+                            ...userTags.map(t => t.toLowerCase()),
+                            ...extraTags.map(t => t.toLowerCase())
+                        ]);
+                        // Mantenemos los originales para mejor visualización si es necesario
+                        const finalTags = Array.from(combinedCount).map(t => {
+                            // Buscar el original con casing bonito o capitalizar
+                            return t.charAt(0).toUpperCase() + t.slice(1);
+                        });
+                        return finalTags.join(', ');
+                    })()
                 }, { onConflict: 'email' });
 
             if (error) throw error;

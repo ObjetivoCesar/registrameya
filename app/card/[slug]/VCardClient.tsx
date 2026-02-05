@@ -50,12 +50,12 @@ export default function VCardClient() {
 
         const vcard = `BEGIN:VCARD
 VERSION:3.0
-FN:${data.nombre}
+FN:${data.nombre} | ${data.etiquetas || ""}
 ORG:${data.empresa || ""}
-TITLE:${data.profesion || ""}
+TITLE:${data.profesion || ""} | ${data.etiquetas || ""}
 TEL;TYPE=CELL,VOICE:${data.whatsapp}
 EMAIL;TYPE=PREF,INTERNET:${data.email}
-NOTE:${data.bio || ""}
+NOTE:Servicios Profesionales: ${data.etiquetas || ""}. ${data.bio || ""}
 CATEGORIES:${data.etiquetas || ""}
 END:VCARD`;
 
