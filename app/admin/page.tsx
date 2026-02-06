@@ -11,13 +11,18 @@ import {
     Filter,
     Clock,
     Eye,
-    MoreVertical,
+    Download,
     RefreshCw,
     LogOut,
     User,
-    Image as ImageIcon,
+    ImageIcon,
     FileText,
-    ShieldAlert
+    ShieldAlert,
+    Edit,
+    Save,
+    X,
+    Upload,
+    Trash2,
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -34,6 +39,9 @@ export default function AdminDashboard() {
     const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [accessKey, setAccessKey] = useState("");
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingRegistro, setEditingRegistro] = useState<any>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         // En un escenario real, esto vendría de una sesión o JWT.
@@ -85,8 +93,133 @@ export default function AdminDashboard() {
         if (!error) {
             setRegistros(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
         } else {
-            alert("Error al actualizar estado. Verifica tus permisos de Admin.");
+            alert("Error al actualizar estado.");
         }
+    };
+
+    const handleEdit = (registro: any) => {
+        setEditingRegistro({ ...registro });
+        setIsEditModalOpen(true);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingRegistro) return;
+        setIsSaving(true);
+        const { error } = await supabase
+            .from('registraya_vcard_registros')
+            .update({
+                nombre: editingRegistro.nombre,
+                profesion: editingRegistro.profesion,
+                empresa: editingRegistro.empresa,
+                whatsapp: editingRegistro.whatsapp,
+                email: editingRegistro.email,
+                bio: editingRegistro.bio,
+                direccion: editingRegistro.direccion,
+                web: editingRegistro.web,
+                instagram: editingRegistro.instagram,
+                linkedin: editingRegistro.linkedin,
+                facebook: editingRegistro.facebook,
+                tiktok: editingRegistro.tiktok,
+                productos_servicios: editingRegistro.productos_servicios,
+                etiquetas: editingRegistro.etiquetas,
+                status: editingRegistro.status,
+                foto_url: editingRegistro.foto_url,
+                galeria_urls: editingRegistro.galeria_urls,
+            })
+            .eq('id', editingRegistro.id);
+
+        if (!error) {
+            setRegistros(prev => prev.map(r => r.id === editingRegistro.id ? editingRegistro : r));
+            setIsEditModalOpen(false);
+            setEditingRegistro(null);
+        } else {
+            alert("Error al guardar cambios: " + error.message);
+        }
+        setIsSaving(false);
+    };
+
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !editingRegistro) return;
+
+        setIsSaving(true);
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${editingRegistro.id}/photo_${Math.random()}.${fileExt}`;
+            const { data, error } = await supabase.storage
+                .from('vcard-assets')
+                .upload(fileName, file);
+
+            if (error) throw error;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('vcard-assets')
+                .getPublicUrl(fileName);
+
+            setEditingRegistro({ ...editingRegistro, foto_url: publicUrl });
+
+            // Update directly in DB too
+            await supabase
+                .from('registraya_vcard_registros')
+                .update({ foto_url: publicUrl })
+                .eq('id', editingRegistro.id);
+
+        } catch (err: any) {
+            alert("Error subiendo foto: " + err.message);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || !editingRegistro || files.length === 0) return;
+
+        setIsSaving(true);
+        try {
+            const newUrls = [...(editingRegistro.galeria_urls || [])];
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${editingRegistro.id}/gallery_${Math.random()}.${fileExt}`;
+                const { error } = await supabase.storage
+                    .from('vcard-assets')
+                    .upload(fileName, file);
+
+                if (error) throw error;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('vcard-assets')
+                    .getPublicUrl(fileName);
+
+                newUrls.push(publicUrl);
+            }
+
+            setEditingRegistro({ ...editingRegistro, galeria_urls: newUrls });
+
+            // Update directly in DB
+            await supabase
+                .from('registraya_vcard_registros')
+                .update({ galeria_urls: newUrls })
+                .eq('id', editingRegistro.id);
+
+        } catch (err: any) {
+            alert("Error subiendo galería: " + err.message);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const removeGalleryItem = async (index: number) => {
+        if (!editingRegistro) return;
+        const newUrls = [...(editingRegistro.galeria_urls || [])];
+        newUrls.splice(index, 1);
+        setEditingRegistro({ ...editingRegistro, galeria_urls: newUrls });
+
+        await supabase
+            .from('registraya_vcard_registros')
+            .update({ galeria_urls: newUrls })
+            .eq('id', editingRegistro.id);
     };
 
     const filtered = registros.filter(r => {
@@ -251,6 +384,21 @@ export default function AdminDashboard() {
                                                         <CheckCircle size={18} />
                                                     </button>
                                                 )}
+                                                <button
+                                                    onClick={() => handleEdit(r)}
+                                                    className="p-3 bg-white/5 text-white/40 rounded-xl hover:bg-white/10 hover:text-white transition-all"
+                                                    title="Editar vCard"
+                                                >
+                                                    <Edit size={18} />
+                                                </button>
+                                                <a
+                                                    href={`/api/vcard/${r.slug || r.id}`}
+                                                    download={`${r.slug || r.id}.vcf`}
+                                                    className="p-3 bg-primary/10 text-primary rounded-xl hover:bg-primary hover:text-navy transition-all"
+                                                    title="Descargar vCard"
+                                                >
+                                                    <Download size={18} />
+                                                </a>
                                                 <a
                                                     href={`/card/${r.slug || r.id}`}
                                                     target="_blank"
@@ -286,7 +434,7 @@ export default function AdminDashboard() {
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="p-8 border-b border-white/10 flex justify-between items-center">
-                                <h3 className="text-xl font-black uppercase italic italic tracking-tighter">Comprobante de Pago</h3>
+                                <h3 className="text-xl font-black uppercase italic tracking-tighter">Comprobante de Pago</h3>
                                 <button onClick={() => setSelectedReceipt(null)} className="p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all text-white/40 hover:text-white">
                                     Cerrar
                                 </button>
@@ -300,6 +448,232 @@ export default function AdminDashboard() {
                             </div>
                         </motion.div>
                     </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal para EDITAR vCard */}
+            <AnimatePresence>
+                {isEditModalOpen && editingRegistro && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto pt-20 pb-20">
+                        <motion.div
+                            initial={{ opacity: 0, y: 50 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 50 }}
+                            className="w-full max-w-4xl bg-navy-light rounded-[40px] border border-white/10 shadow-3xl overflow-hidden"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="p-8 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
+                                <div>
+                                    <h3 className="text-2xl font-black uppercase italic tracking-tighter">Editar Registro</h3>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-primary mt-1">ID: {editingRegistro.id}</p>
+                                </div>
+                                <button
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all text-white/40 hover:text-white"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="p-10 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                                <div className="space-y-12">
+                                    {/* Foto de Perfil */}
+                                    <div className="space-y-6">
+                                        <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/30 border-b border-white/5 pb-4">FOTO DE PERFIL</h4>
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="w-32 h-32 rounded-full bg-white/5 border-2 border-dashed border-white/10 flex items-center justify-center overflow-hidden group relative">
+                                                {editingRegistro.foto_url ? (
+                                                    <img src={editingRegistro.foto_url} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <User size={40} className="text-white/10" />
+                                                )}
+                                                <label className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer">
+                                                    <Upload size={20} className="text-white" />
+                                                    <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} />
+                                                </label>
+                                            </div>
+                                            <p className="text-[10px] font-bold text-white/40 text-center uppercase">Formatos: JPG, PNG. Máx 5MB.</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Información Personal */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-6">
+                                            <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/30 border-b border-white/5 pb-4">INFO PERSONAL</h4>
+                                            <div>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Nombre Completo</label>
+                                                <input
+                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all"
+                                                    value={editingRegistro.nombre}
+                                                    onChange={e => setEditingRegistro({ ...editingRegistro, nombre: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Profesión</label>
+                                                <input
+                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all"
+                                                    value={editingRegistro.profesion}
+                                                    onChange={e => setEditingRegistro({ ...editingRegistro, profesion: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">WhatsApp (con código)</label>
+                                                <input
+                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all"
+                                                    value={editingRegistro.whatsapp}
+                                                    onChange={e => setEditingRegistro({ ...editingRegistro, whatsapp: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Email</label>
+                                                <input
+                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all"
+                                                    value={editingRegistro.email}
+                                                    onChange={e => setEditingRegistro({ ...editingRegistro, email: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Redes y Links */}
+                                        <div className="space-y-6">
+                                            <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/30 border-b border-white/5 pb-4">REDES Y LINKS</h4>
+                                            <div>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Facebook (Link)</label>
+                                                <input
+                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all"
+                                                    value={editingRegistro.facebook || ''}
+                                                    onChange={e => setEditingRegistro({ ...editingRegistro, facebook: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">TikTok (Link)</label>
+                                                <input
+                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all"
+                                                    value={editingRegistro.tiktok || ''}
+                                                    onChange={e => setEditingRegistro({ ...editingRegistro, tiktok: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Instagram (Link)</label>
+                                                <input
+                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all"
+                                                    value={editingRegistro.instagram || ''}
+                                                    onChange={e => setEditingRegistro({ ...editingRegistro, instagram: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">LinkedIn (Link)</label>
+                                                <input
+                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all"
+                                                    value={editingRegistro.linkedin || ''}
+                                                    onChange={e => setEditingRegistro({ ...editingRegistro, linkedin: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Contenido Extendido */}
+                                    <div className="space-y-6 pt-4">
+                                        <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/30 border-b border-white/5 pb-4">CONTENIDO Y SEO</h4>
+                                        <div>
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Bio / Descripción</label>
+                                            <textarea
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all resize-none"
+                                                rows={3}
+                                                value={editingRegistro.bio || ''}
+                                                onChange={e => setEditingRegistro({ ...editingRegistro, bio: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Productos / Servicios</label>
+                                            <textarea
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all resize-none"
+                                                rows={3}
+                                                value={editingRegistro.productos_servicios || ''}
+                                                onChange={e => setEditingRegistro({ ...editingRegistro, productos_servicios: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Etiquetas (Separadas por coma)</label>
+                                            <input
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all"
+                                                value={editingRegistro.etiquetas || ''}
+                                                onChange={e => setEditingRegistro({ ...editingRegistro, etiquetas: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            <div>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Estado del Registro</label>
+                                                <select
+                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all appearance-none"
+                                                    value={editingRegistro.status}
+                                                    onChange={e => setEditingRegistro({ ...editingRegistro, status: e.target.value })}
+                                                >
+                                                    <option value="pendiente" className="bg-navy">Pendiente</option>
+                                                    <option value="pagado" className="bg-navy">Pagado</option>
+                                                    <option value="entregado" className="bg-navy">Entregado</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Sitio Web</label>
+                                                <input
+                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all"
+                                                    value={editingRegistro.web || ''}
+                                                    onChange={e => setEditingRegistro({ ...editingRegistro, web: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Galería de Trabajos */}
+                                        <div className="pt-4">
+                                            <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/30 border-b border-white/5 pb-4 mb-6">GALERÍA DE TRABAJOS</h4>
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                                {(editingRegistro.galeria_urls || []).map((url: string, idx: number) => (
+                                                    <div key={idx} className="relative aspect-square rounded-2xl bg-white/5 overflow-hidden group">
+                                                        <img src={url} className="w-full h-full object-cover" />
+                                                        <button
+                                                            onClick={() => removeGalleryItem(idx)}
+                                                            className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                                        >
+                                                            <Trash2 size={12} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                                {(editingRegistro.galeria_urls || []).length < 5 && (
+                                                    <label className="aspect-square rounded-2xl bg-white/5 border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/10 transition-all">
+                                                        <Upload size={20} className="text-white/20" />
+                                                        <span className="text-[8px] font-black uppercase tracking-widest opacity-20">Subir</span>
+                                                        <input type="file" className="hidden" multiple accept="image/*" onChange={handleGalleryUpload} />
+                                                    </label>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-8 border-t border-white/10 bg-white/[0.02] flex justify-end gap-4">
+                                <button
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="px-8 py-4 rounded-2xl bg-white/5 font-black uppercase text-[10px] tracking-widest hover:bg-white/10 transition-all"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleSaveEdit}
+                                    disabled={isSaving}
+                                    className="px-10 py-4 rounded-2xl bg-primary shadow-orange font-black uppercase text-[10px] tracking-widest hover:scale-105 transition-all text-navy flex items-center gap-2"
+                                >
+                                    {isSaving ? (
+                                        <RefreshCw size={14} className="animate-spin" />
+                                    ) : (
+                                        <Save size={14} />
+                                    )}
+                                    {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
         </div>

@@ -57,26 +57,25 @@ export async function GET(
         }
 
         // 2. Generar vCard con todos los campos (Version 4.0)
+        // Optimizamos para Google/Android: removemos CHARSET=UTF-8 (ya es implícito en 4.0)
         const vcard = [
             'BEGIN:VCARD',
             'VERSION:4.0',
-            `FN;CHARSET=UTF-8:${user.nombre}`,
-            `N;CHARSET=UTF-8:${user.nombre.split(' ').reverse().join(';')};;;`,
-            `TITLE;CHARSET=UTF-8:${user.profesion || ''}`,
-            `ORG;CHARSET=UTF-8:${user.empresa || ''}`,
+            `FN:${user.nombre}`,
+            `N:${user.nombre.split(' ').reverse().join(';')};;;`,
+            `TITLE:${user.profesion || ''}`,
+            `ORG:${user.empresa || ''}`,
             `TEL;TYPE=cell,text,voice;VALUE=uri:tel:${user.whatsapp}`,
             `EMAIL;TYPE=work:${user.email}`,
             `ADR;TYPE=work;LABEL="${(user.direccion || '').replace(/"/g, "'")}":;;${user.direccion || ''};;;;`,
             user.web ? `URL:${user.web}` : '',
             `NOTE:${noteContent.replace(/\n/g, '\\n')}`,
             user.etiquetas ? `CATEGORIES:${user.etiquetas}` : '',
-            photoBlock,
-            user.instagram ? `X-SOCIALPROFILE;TYPE=instagram;LABEL=Instagram:${user.instagram}` : '',
-            user.linkedin ? `X-SOCIALPROFILE;TYPE=linkedin;LABEL=LinkedIn:${user.linkedin}` : '',
-            user.facebook ? `X-SOCIALPROFILE;TYPE=facebook;LABEL=Facebook:${user.facebook}` : '',
-            user.tiktok ? `X-SOCIALPROFILE;TYPE=tiktok;LABEL=TikTok:${user.tiktok}` : '',
-            `X-SOCIALPROFILE;TYPE=whatsapp;LABEL=WhatsApp:https://wa.me/${user.whatsapp.replace(/[^0-9]/g, '')}`,
-            `REV:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
+            photoBlock ? `PHOTO:data:image/jpeg;base64,${photoBlock.replace('PHOTO;ENCODING=b;TYPE=JPEG:\r\n ', '').replace(/\r\n /g, '')}` : '',
+            user.instagram ? `X-SOCIALPROFILE;TYPE=instagram:${user.instagram}` : '',
+            user.linkedin ? `X-SOCIALPROFILE;TYPE=linkedin:${user.linkedin}` : '',
+            user.facebook ? `X-SOCIALPROFILE;TYPE=facebook:${user.facebook}` : '',
+            user.tiktok ? `X-SOCIALPROFILE;TYPE=tiktok:${user.tiktok}` : '',
             'END:VCARD'
         ].filter(Boolean).join('\r\n');
 
