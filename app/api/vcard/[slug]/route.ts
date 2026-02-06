@@ -72,37 +72,32 @@ export async function GET(
         // Limpiar WhatsApp para el campo TEL
         const cleanWhatsApp = user.whatsapp.replace(/\s+/g, '');
 
-        // 2. Generar vCard con todos los campos (Version 3.0 - Máxima Compatibilidad)
+        // 2. Generar vCard con todos los campos (Version 3.0 - Estándar Minimalista)
+        // Eliminamos CHARSET=UTF-8 de los campos (el header de la respuesta ya lo define)
+        // Simplificamos TEL y EMAIL para máxima compatibilidad
         const vcard = [
             'BEGIN:VCARD',
             'VERSION:3.0',
-            `FN;CHARSET=UTF-8:${user.nombre}`,
-            `N;CHARSET=UTF-8:${user.nombre.split(' ').reverse().join(';')};;;`,
-            `TITLE;CHARSET=UTF-8:${user.profesion || ''}`,
-            `ORG;CHARSET=UTF-8:${user.empresa || ''}`,
-            `TEL;TYPE=CELL,PREF,VOICE:${cleanWhatsApp}`,
-            `EMAIL;TYPE=INTERNET,WORK,PREF:${user.email}`,
-            `ADR;TYPE=WORK;CHARSET=UTF-8:;;${user.direccion || ''};;;;`,
+            `FN:${user.nombre}`,
+            `N:${user.nombre.split(' ').reverse().join(';')};;;`,
+            user.profesion ? `TITLE:${user.profesion}` : '',
+            user.empresa ? `ORG:${user.empresa}` : '',
+            `TEL;TYPE=CELL:${cleanWhatsApp}`,
+            `EMAIL;TYPE=WORK,INTERNET:${user.email}`,
+            `ADR;TYPE=WORK:;;${user.direccion || ''};;;;`,
             user.web ? `URL:${user.web}` : '',
-            `NOTE;CHARSET=UTF-8:${noteContent.replace(/\n/g, '\\n')}`,
-            user.etiquetas ? `CATEGORIES;CHARSET=UTF-8:${user.etiquetas}` : '',
-            photoBlock, // Ya viene con el formato PHOTO;TYPE=JPEG;ENCODING=B:\r\n [folded]
-            user.instagram ? `X-SOCIALPROFILE;TYPE=instagram:${user.instagram}` : '',
-            user.linkedin ? `X-SOCIALPROFILE;TYPE=linkedin:${user.linkedin}` : '',
-            user.facebook ? `X-SOCIALPROFILE;TYPE=facebook:${user.facebook}` : '',
-            user.tiktok ? `X-SOCIALPROFILE;TYPE=tiktok:${user.tiktok}` : '',
-            `REV:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
-            `UID:${user.id || slug}`,
+            `NOTE:${noteContent.replace(/\n/g, '\\n')}`,
+            user.foto_url ? `PHOTO;TYPE=JPEG;ENCODING=BASE64:\r\n ${Buffer.from(await (await fetch(user.foto_url)).arrayBuffer()).toString('base64').match(/.{1,72}/g)?.join('\r\n ') || ''}` : '',
             'END:VCARD'
         ].filter(Boolean).join('\r\n');
 
-        // 3. Retornar con headers que fuercen descarga
+        // 3. Retornar con headers estándar
         return new NextResponse(vcard, {
             status: 200,
             headers: {
-                'Content-Type': 'text/vcard;charset=utf-8',
+                'Content-Type': 'text/vcard; charset=UTF-8',
                 'Content-Disposition': `attachment; filename="${slug}.vcf"`,
-                'Cache-Control': 'no-store, max-age=0', // Evitar cache para que cambios en fotos/datos se vean rápido
+                'Cache-Control': 'no-store, max-age=0',
             },
         });
     } catch (err) {
