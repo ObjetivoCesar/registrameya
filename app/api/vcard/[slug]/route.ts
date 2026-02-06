@@ -37,7 +37,7 @@ export async function GET(
                     const base64 = Buffer.from(arrayBuffer).toString('base64');
                     // RFC 2426: Line folding (75 chars max, then CRLF + space)
                     const folded = base64.match(/.{1,72}/g)?.join('\r\n ') || base64;
-                    photoBlock = `PHOTO;ENCODING=b;TYPE=JPEG:\r\n ${folded}`;
+                    photoBlock = `PHOTO;TYPE=JPEG;ENCODING=B:\r\n ${folded}`;
                 }
             } catch (photoErr) {
                 console.error('Error fetching photo for vCard:', photoErr);
@@ -45,33 +45,44 @@ export async function GET(
             }
         }
 
-        // 1c. Formatear Notas con Galería y Productos
+        // 1c. Formatear Notas con Galería, Productos y Redes (para redundancia)
         let noteContent = `${user.bio || ''}`;
         if (user.productos_servicios) {
             noteContent += `\n\nProductos/Servicios:\n${user.productos_servicios}`;
         }
-        noteContent += ` - Generado con RegistrameYa`;
+
+        if (user.instagram || user.facebook || user.linkedin || user.tiktok) {
+            noteContent += `\n\nRedes Sociales:`;
+            if (user.facebook) noteContent += `\nFB: ${user.facebook}`;
+            if (user.instagram) noteContent += `\nIG: ${user.instagram}`;
+            if (user.tiktok) noteContent += `\nTK: ${user.tiktok}`;
+            if (user.linkedin) noteContent += `\nLI: ${user.linkedin}`;
+        }
 
         if (user.galeria_urls && user.galeria_urls.length > 0) {
             noteContent += `\n\nMis Trabajos:\n${user.galeria_urls.join('\n')}`;
         }
 
-        // 2. Generar vCard con todos los campos (Version 4.0)
-        // Optimizamos para Google/Android: removemos CHARSET=UTF-8 (ya es implícito en 4.0)
+        noteContent += `\n\n- RegistrameYa`;
+
+        // Limpiar WhatsApp para el campo TEL
+        const cleanWhatsApp = user.whatsapp.replace(/\s+/g, '');
+
+        // 2. Generar vCard con todos los campos (Version 3.0 - Máxima Compatibilidad)
         const vcard = [
             'BEGIN:VCARD',
-            'VERSION:4.0',
-            `FN:${user.nombre}`,
-            `N:${user.nombre.split(' ').reverse().join(';')};;;`,
-            `TITLE:${user.profesion || ''}`,
-            `ORG:${user.empresa || ''}`,
-            `TEL;TYPE=cell,text,voice;VALUE=uri:tel:${user.whatsapp}`,
-            `EMAIL;TYPE=work:${user.email}`,
-            `ADR;TYPE=work;LABEL="${(user.direccion || '').replace(/"/g, "'")}":;;${user.direccion || ''};;;;`,
+            'VERSION:3.0',
+            `FN;CHARSET=UTF-8:${user.nombre}`,
+            `N;CHARSET=UTF-8:${user.nombre.split(' ').reverse().join(';')};;;`,
+            `TITLE;CHARSET=UTF-8:${user.profesion || ''}`,
+            `ORG;CHARSET=UTF-8:${user.empresa || ''}`,
+            `TEL;TYPE=CELL,VOICE:${cleanWhatsApp}`,
+            `EMAIL;TYPE=INTERNET,WORK:${user.email}`,
+            `ADR;TYPE=WORK;CHARSET=UTF-8:;;${user.direccion || ''};;;;`,
             user.web ? `URL:${user.web}` : '',
-            `NOTE:${noteContent.replace(/\n/g, '\\n')}`,
+            `NOTE;CHARSET=UTF-8:${noteContent.replace(/\n/g, '\\n')}`,
             user.etiquetas ? `CATEGORIES:${user.etiquetas}` : '',
-            photoBlock ? `PHOTO:data:image/jpeg;base64,${photoBlock.replace('PHOTO;ENCODING=b;TYPE=JPEG:\r\n ', '').replace(/\r\n /g, '')}` : '',
+            photoBlock, // Ya viene con el formato PHOTO;ENCODING=b;TYPE=JPEG:\r\n [folded]
             user.instagram ? `X-SOCIALPROFILE;TYPE=instagram:${user.instagram}` : '',
             user.linkedin ? `X-SOCIALPROFILE;TYPE=linkedin:${user.linkedin}` : '',
             user.facebook ? `X-SOCIALPROFILE;TYPE=facebook:${user.facebook}` : '',
