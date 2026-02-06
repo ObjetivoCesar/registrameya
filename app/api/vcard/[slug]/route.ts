@@ -72,10 +72,8 @@ export async function GET(
         // Limpiar WhatsApp para el campo TEL
         const cleanWhatsApp = user.whatsapp.replace(/\s+/g, '');
 
-        // 2. Generar vCard con todos los campos (Version 3.0 - Estándar Minimalista)
-        // Eliminamos CHARSET=UTF-8 de los campos (el header de la respuesta ya lo define)
-        // Simplificamos TEL y EMAIL para máxima compatibilidad
-        const vcard = [
+        // 2. Generar vCard con todos los campos (Version 3.0 - Optimizado para iOS/Android)
+        const vcardArr = [
             'BEGIN:VCARD',
             'VERSION:3.0',
             `FN:${user.nombre}`,
@@ -84,12 +82,46 @@ export async function GET(
             user.empresa ? `ORG:${user.empresa}` : '',
             `TEL;TYPE=CELL:${cleanWhatsApp}`,
             `EMAIL;TYPE=WORK,INTERNET:${user.email}`,
-            `ADR;TYPE=WORK:;;${user.direccion || ''};;;;`,
+
+            // Dirección con etiqueta personalizada para iOS (Ubicación)
+            `item1.ADR:;;${user.direccion || ''};;;;`,
+            `item1.X-ABLabel:Ubicación`,
+
             user.web ? `URL:${user.web}` : '',
-            `NOTE:${noteContent.replace(/\n/g, '\\n')}`,
-            user.foto_url ? `PHOTO;TYPE=JPEG;ENCODING=BASE64:\r\n ${Buffer.from(await (await fetch(user.foto_url)).arrayBuffer()).toString('base64').match(/.{1,72}/g)?.join('\r\n ') || ''}` : '',
-            'END:VCARD'
-        ].filter(Boolean).join('\r\n');
+
+            // Redes Sociales con etiquetas personalizadas
+            user.instagram ? `item2.URL:${user.instagram}` : '',
+            user.instagram ? `item2.X-ABLabel:Instagram` : '',
+
+            user.facebook ? `item3.URL:${user.facebook}` : '',
+            user.facebook ? `item3.X-ABLabel:Facebook` : '',
+
+            user.linkedin ? `item4.URL:${user.linkedin}` : '',
+            user.linkedin ? `item4.X-ABLabel:LinkedIn` : '',
+
+            user.tiktok ? `item5.URL:${user.tiktok}` : '',
+            user.tiktok ? `item5.X-ABLabel:TikTok` : '',
+
+            `NOTE:${noteContent.replace(/\n/g, '\\n')}`
+        ];
+
+        // Procesar foto de forma síncrona/inline para evitar problemas de flujo
+        if (user.foto_url) {
+            try {
+                const photoResp = await fetch(user.foto_url);
+                if (photoResp.ok) {
+                    const buffer = await photoResp.arrayBuffer();
+                    const b64 = Buffer.from(buffer).toString('base64');
+                    const folded = b64.match(/.{1,72}/g)?.join('\r\n ') || b64;
+                    vcardArr.push(`PHOTO;TYPE=JPEG;ENCODING=B:\r\n ${folded}`);
+                }
+            } catch (e) {
+                console.error("Error inline photo:", e);
+            }
+        }
+
+        vcardArr.push('END:VCARD');
+        const vcard = vcardArr.filter(Boolean).join('\r\n');
 
         // 3. Retornar con headers estándar
         return new NextResponse(vcard, {
