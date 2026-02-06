@@ -63,6 +63,10 @@ export async function GET(
             noteContent += `\n\nMis Trabajos:\n${user.galeria_urls.join('\n')}`;
         }
 
+        if (user.etiquetas) {
+            noteContent += `\n\nEtiquetas: ${user.etiquetas}`;
+        }
+
         noteContent += `\n\n- RegistrameYa`;
 
         // Limpiar WhatsApp para el campo TEL
@@ -76,17 +80,19 @@ export async function GET(
             `N;CHARSET=UTF-8:${user.nombre.split(' ').reverse().join(';')};;;`,
             `TITLE;CHARSET=UTF-8:${user.profesion || ''}`,
             `ORG;CHARSET=UTF-8:${user.empresa || ''}`,
-            `TEL;TYPE=CELL,VOICE:${cleanWhatsApp}`,
-            `EMAIL;TYPE=INTERNET,WORK:${user.email}`,
+            `TEL;TYPE=CELL,PREF,VOICE:${cleanWhatsApp}`,
+            `EMAIL;TYPE=INTERNET,WORK,PREF:${user.email}`,
             `ADR;TYPE=WORK;CHARSET=UTF-8:;;${user.direccion || ''};;;;`,
             user.web ? `URL:${user.web}` : '',
             `NOTE;CHARSET=UTF-8:${noteContent.replace(/\n/g, '\\n')}`,
-            user.etiquetas ? `CATEGORIES:${user.etiquetas}` : '',
-            photoBlock, // Ya viene con el formato PHOTO;ENCODING=b;TYPE=JPEG:\r\n [folded]
+            user.etiquetas ? `CATEGORIES;CHARSET=UTF-8:${user.etiquetas}` : '',
+            photoBlock, // Ya viene con el formato PHOTO;TYPE=JPEG;ENCODING=B:\r\n [folded]
             user.instagram ? `X-SOCIALPROFILE;TYPE=instagram:${user.instagram}` : '',
             user.linkedin ? `X-SOCIALPROFILE;TYPE=linkedin:${user.linkedin}` : '',
             user.facebook ? `X-SOCIALPROFILE;TYPE=facebook:${user.facebook}` : '',
             user.tiktok ? `X-SOCIALPROFILE;TYPE=tiktok:${user.tiktok}` : '',
+            `REV:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
+            `UID:${user.id || slug}`,
             'END:VCARD'
         ].filter(Boolean).join('\r\n');
 
