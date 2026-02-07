@@ -23,6 +23,8 @@ import {
     X,
     Upload,
     Trash2,
+    Mail,
+    Loader2
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -228,6 +230,47 @@ export default function AdminDashboard() {
         return matchesSearch && matchesStatus;
     });
 
+    const sendVCardEmail = async (registro: any) => {
+        if (!confirm(`¿Estás seguro de aprobar y enviar el correo a ${registro.email}?`)) return;
+
+        // Optimistic update to UI
+        const originalStatus = registro.status;
+        setRegistros(prev => prev.map(r => r.id === registro.id ? { ...r, isSending: true } : r));
+
+        try {
+            const vcardUrl = `${window.location.origin}/api/vcard/${registro.slug || registro.id}`;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(vcardUrl)}`; // Quick workaround for public QR if local API fails
+
+            const res = await fetch('/api/send-vcard', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: registro.email,
+                    name: registro.nombre,
+                    vcardUrl,
+                    qrUrl // Note: Sending a public URL for QR is easier for email service than base64
+                })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error || 'Error enviando correo');
+
+            alert("✅ Correo enviado con éxito");
+
+            // Auto update status to "entregado" if it wasn't already
+            if (registro.status !== 'entregado') {
+                updateStatus(registro.id, 'entregado');
+            }
+
+        } catch (error: any) {
+            console.error("Error sending email:", error);
+            alert("❌ Error al enviar: " + error.message);
+        } finally {
+            setRegistros(prev => prev.map(r => r.id === registro.id ? { ...r, isSending: false } : r));
+        }
+    };
+
     if (!isAuthorized) {
         return (
             <div className="min-h-screen bg-navy flex items-center justify-center p-6">
@@ -375,6 +418,15 @@ export default function AdminDashboard() {
                                         </td>
                                         <td className="px-8 py-6">
                                             <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={() => sendVCardEmail(r)}
+                                                    className="p-3 bg-green-500/20 text-green-500 rounded-xl hover:bg-green-500 hover:text-white transition-all flex items-center gap-2"
+                                                    title="Aprobar y Enviar Email"
+                                                    disabled={r.isSending}
+                                                >
+                                                    {r.isSending ? <Loader2 size={18} className="animate-spin" /> : <Mail size={18} />}
+                                                </button>
+
                                                 {r.status === 'pendiente' && (
                                                     <button
                                                         onClick={() => updateStatus(r.id, 'pagado')}

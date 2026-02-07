@@ -77,11 +77,14 @@ export default function RegisterWizard() {
 
     const [emailError, setEmailError] = useState('');
     const [hasManualTags, setHasManualTags] = useState(false);
+    const [previewDevice, setPreviewDevice] = useState('android');
     const [isGeneratingTags, setIsGeneratingTags] = useState(false);
+
+    const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
 
     const generateWithAI = async () => {
         if (!formData.profession) {
-            alert("Por favor ingresa tu profesión primero");
+            alert("Por favor ingresa tu profesión primero para poder generar etiquetas relevantes.");
             return;
         }
         setIsGeneratingTags(true);
@@ -91,15 +94,62 @@ export default function RegisterWizard() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ profession: formData.profession, bio: formData.bio })
             });
+
+            if (!res.ok) throw new Error('Error en el servidor');
+
             const data = await res.json();
             if (data.tags) {
                 updateForm('categories', data.tags);
                 setHasManualTags(true);
+            } else {
+                alert("No se pudieron generar etiquetas. Intenta de nuevo.");
             }
         } catch (err) {
             console.error("Error generating tags:", err);
+            alert("Hubo un error al conectar con la IA. Por favor revisa tu conexión.");
         } finally {
             setIsGeneratingTags(false);
+        }
+    };
+
+    const analyzeImageFromPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsAnalyzingImage(true);
+        try {
+            // Convert to base64
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = async () => {
+                const base64Image = reader.result; // Data URL including header
+
+                try {
+                    const res = await fetch('/api/analyze-image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: base64Image, profession: formData.profession })
+                    });
+
+                    if (!res.ok) throw new Error('Error al analizar imagen');
+
+                    const data = await res.json();
+                    if (data.text) {
+                        const currentText = formData.products ? formData.products + '\n\n' : '';
+                        updateForm('products', currentText + data.text);
+                    }
+                } catch (apiErr) {
+                    console.error("API Error", apiErr);
+                    alert("No pudimos analizar la imagen. Asegúrate que sea clara.");
+                } finally {
+                    setIsAnalyzingImage(false);
+                    // Clear input
+                    e.target.value = '';
+                }
+            };
+        } catch (err) {
+            console.error("File reading error", err);
+            setIsAnalyzingImage(false);
         }
     };
 
@@ -315,28 +365,11 @@ export default function RegisterWizard() {
                 throw upsertError;
             }
 
-            // 4a. GENERAR QR CODE (PNG) pointing to API for direct download
-            const profileUrl = `${window.location.origin}/api/vcard/${slug}`;
-            const qrDataUrl = await QRCode.toDataURL(profileUrl, { width: 500, margin: 2 });
-
-            // Descargar QR
-            const aQr = document.body.appendChild(document.createElement('a'));
-            aQr.href = qrDataUrl;
-            aQr.download = `qr-${slug}.png`;
-            setTimeout(() => { aQr.click(); aQr.remove(); }, 500);
-
-            // 4b. GENERAR Y DESCARGAR VCARD (Client-side version for immediate feedback)
-            const vcardContent = generateVCard(formData, photoBase64 || null, galleryUrls, finalCategories);
-            const blob = new Blob([vcardContent], { type: 'text/vcard;charset=utf-8' });
-            const url = window.URL.createObjectURL(blob);
-            const aVcard = document.body.appendChild(document.createElement('a'));
-            aVcard.href = url;
-            aVcard.download = `${slug}.vcf`;
-            aVcard.click();
-            setTimeout(() => { aVcard.remove(); window.URL.revokeObjectURL(url); }, 1000);
+            // 4. NOTIFICACIÓN FINAL (Sin descarga automática)
+            // El usuario admin aprobará y enviará el correo desde el panel.
 
             setIsSubmitting(false);
-            setStep(6);
+            setStep(5); // Ir a pantalla de "En Revisión"
         } catch (err) {
             console.error("Full Error Context:", err);
             const msg = err instanceof Error ? err.message : JSON.stringify(err);
@@ -539,12 +572,25 @@ export default function RegisterWizard() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-[10px] font-black text-navy/40 uppercase tracking-widest mb-3">Productos o Servicios (Se incluirán en el contacto)</label>
+                                    <div className="flex justify-between items-center mb-3">
+                                        <label className="block text-[10px] font-black text-navy/40 uppercase tracking-widest">Productos o Servicios (Se incluirán en el contacto)</label>
+                                        <label className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer">
+                                            {isAnalyzingImage ? <Loader2 size={12} className="animate-spin" /> : <Camera size={12} />}
+                                            <span>{isAnalyzingImage ? 'Analizando...' : 'Escanear Foto con IA'}</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={analyzeImageFromPhoto}
+                                                disabled={isAnalyzingImage}
+                                            />
+                                        </label>
+                                    </div>
                                     <textarea
                                         value={formData.products}
                                         onChange={(e) => updateForm('products', e.target.value)}
-                                        placeholder="Ej. Cambio de tuberías, Instalación de grifos, Mantenimiento preventivo..."
-                                        rows={3}
+                                        placeholder="Ej. Cambio de tuberías, Instalación de grifos, Mantenimiento preventivo... (O sube una foto de tu lista de precios)"
+                                        rows={4}
                                         className="w-full bg-white/50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-6 py-5 outline-none font-bold text-navy transition-all shadow-sm resize-none"
                                     />
                                 </div>
@@ -618,7 +664,7 @@ export default function RegisterWizard() {
                                         <label className="block text-[10px] font-black text-navy/40 uppercase tracking-widest ml-1">Etiquetas de Búsqueda (Comas)</label>
                                         <button
                                             onClick={generateWithAI}
-                                            disabled={isGeneratingTags}
+                                            disabled={isGeneratingTags || !formData.profession}
                                             className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2 hover:opacity-80 transition-opacity disabled:opacity-50"
                                         >
                                             {isGeneratingTags ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />}
@@ -736,36 +782,88 @@ export default function RegisterWizard() {
                     {/* STEP 4: SELECCIÓN DE PLAN */}
                     {step === 4 && (
                         <div className="text-center text-white">
-                            <h2 className="text-3xl md:text-5xl font-black text-primary tracking-tighter uppercase italic mb-10">Confirma y Elige</h2>
+                            <h2 className="text-3xl md:text-5xl font-black text-primary tracking-tighter uppercase italic mb-4">Vista Previa</h2>
+                            <p className="text-white/60 text-sm mb-8">Así se verá tu Contacto Digital. Elige tu plan y aprueba.</p>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center max-w-4xl mx-auto">
-                                {/* PREVIEW */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start max-w-5xl mx-auto">
+                                {/* PREVIEW CON TABS */}
                                 <div className="relative order-2 lg:order-1">
-                                    <div className="absolute -inset-10 bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
-                                    <div className="w-[280px] h-[500px] bg-white rounded-[48px] border-[12px] border-navy/90 mx-auto p-8 shadow-2xl relative z-10 overflow-hidden text-navy">
-                                        <div className="h-4 w-16 bg-navy/5 rounded-full mx-auto mb-10" />
-                                        <div className="flex flex-col items-center text-center">
-                                            <div className="w-24 h-24 rounded-[32px] bg-primary/5 border-2 border-primary/20 mb-6 overflow-hidden flex items-center justify-center">
+                                    {/* Tabs */}
+                                    <div className="flex gap-2 mb-6 justify-center">
+                                        {['Android', 'iPhone'].map((device) => (
+                                            <button
+                                                key={device}
+                                                onClick={() => setPreviewDevice(device.toLowerCase())}
+                                                className={cn(
+                                                    "px-6 py-2 rounded-xl font-bold text-sm uppercase tracking-wider transition-all",
+                                                    previewDevice === device.toLowerCase()
+                                                        ? "bg-primary text-white shadow-orange"
+                                                        : "bg-white/5 text-white/40 hover:bg-white/10"
+                                                )}
+                                            >
+                                                {device}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Preview Card */}
+                                    <div className="bg-gradient-to-br from-cream to-white rounded-[3rem] p-12 shadow-2xl border border-navy/5 max-w-md mx-auto">
+                                        {/* Header con foto */}
+                                        <div className="flex flex-col items-center text-center mb-12">
+                                            <div className="w-36 h-36 rounded-[2.5rem] bg-primary/5 border-4 border-primary/20 mb-6 overflow-hidden flex items-center justify-center shadow-lg">
                                                 {formData.photo ? (
-                                                    <img src={URL.createObjectURL(formData.photo)} className="w-full h-full object-cover" />
-                                                ) : <User className="text-primary/20" size={40} />}
+                                                    <img src={URL.createObjectURL(formData.photo)} className="w-full h-full object-cover" alt="Profile" />
+                                                ) : (
+                                                    <User className="text-primary/30" size={72} />
+                                                )}
                                             </div>
-                                            <h4 className="text-xl font-black leading-none mb-1 text-navy">{formData.name || 'Tu Nombre'}</h4>
-                                            <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-8">{formData.profession || 'Tu Profesión'}</p>
-
-                                            <div className="w-full space-y-4">
-                                                <div className="flex items-center gap-3 p-3 bg-cream rounded-2xl border border-navy/5">
-                                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center"><Smartphone size={14} className="text-primary" /></div>
-                                                    <div className="h-2 w-20 bg-navy/10 rounded-full" />
-                                                </div>
-                                                <div className="flex items-center gap-3 p-3 bg-cream rounded-2xl border border-navy/5">
-                                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center"><Mail size={14} className="text-primary" /></div>
-                                                    <div className="h-2 w-24 bg-navy/10 rounded-full" />
-                                                </div>
-                                            </div>
-
-                                            <div className="mt-12 w-full py-4 bg-primary rounded-2xl text-[10px] font-black text-white uppercase tracking-widest shadow-orange">Guardar Contacto</div>
+                                            <h3 className="text-2xl font-black text-navy mb-3">{formData.name || 'Tu Nombre'}</h3>
+                                            <p className="text-sm font-bold text-primary uppercase tracking-wider mb-3">{formData.profession || 'Tu Profesión'}</p>
+                                            {formData.company && <p className="text-xs text-navy/60 font-medium">{formData.company}</p>}
                                         </div>
+
+                                        {/* Bio */}
+                                        {formData.bio && (
+                                            <div className="mb-10 p-6 bg-white rounded-3xl border border-navy/5 shadow-sm">
+                                                <p className="text-sm text-navy/70 leading-relaxed">{formData.bio}</p>
+                                            </div>
+                                        )}
+
+                                        {/* Botones de contacto */}
+                                        <div className="space-y-5 mb-10">
+                                            {formData.whatsapp && (
+                                                <div className="flex items-center gap-5 p-6 bg-white rounded-3xl border border-navy/5 shadow-sm hover:shadow-md transition-shadow">
+                                                    <div className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                                                        <Smartphone size={24} className="text-green-600" />
+                                                    </div>
+                                                    <div className="text-left flex-1 min-w-0">
+                                                        <p className="text-xs text-navy/50 font-bold uppercase mb-1.5">WhatsApp</p>
+                                                        <p className="text-sm text-navy font-semibold truncate">{formData.whatsapp}</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {formData.email && (
+                                                <div className="flex items-center gap-5 p-6 bg-white rounded-3xl border border-navy/5 shadow-sm hover:shadow-md transition-shadow">
+                                                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                                        <Mail size={24} className="text-primary" />
+                                                    </div>
+                                                    <div className="text-left flex-1 min-w-0">
+                                                        <p className="text-xs text-navy/50 font-bold uppercase mb-1.5">Email</p>
+                                                        <p className="text-sm text-navy font-semibold break-all">{formData.email}</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Botón de acción */}
+                                        <div className="w-full py-6 bg-gradient-to-r from-primary to-accent rounded-3xl text-sm font-black text-white uppercase tracking-widest shadow-orange text-center hover:scale-105 transition-transform cursor-pointer">
+                                            Guardar Contacto
+                                        </div>
+
+                                        {/* Disclaimer */}
+                                        <p className="text-[10px] text-navy/40 text-center mt-8 leading-relaxed px-4">
+                                            * La apariencia final puede variar según el modelo y sistema operativo del dispositivo.
+                                        </p>
                                     </div>
                                 </div>
 
@@ -802,35 +900,9 @@ export default function RegisterWizard() {
                         </div>
                     )}
 
-                    {/* STEP 5: PAGO */}
+                    {/* STEP 5: EN REVISIÓN */}
                     {step === 5 && (
-                        <div className="max-w-xl mx-auto text-center text-white">
-                            <h2 className="text-3xl md:text-5xl font-black text-primary tracking-tighter uppercase italic mb-4">¡Casi Listo!</h2>
-                            <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-10 italic">Descarga tu tarjeta y finaliza el registro</p>
-
-                            <div className="bg-white/5 p-10 rounded-[40px] border border-white/10 flex flex-col items-center justify-center relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-32 bg-primary/20 blur-[100px] rounded-full pointer-events-none" />
-
-                                <div className="w-24 h-24 bg-primary/20 text-primary rounded-full flex items-center justify-center mb-6 animate-pulse">
-                                    <Smartphone size={48} />
-                                </div>
-
-                                <h3 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-4">Descarga tu vCard</h3>
-                                <p className="text-white/60 text-sm font-medium mb-8 max-w-sm">
-                                    Haz clic abajo para descargar tu archivo vCard (.vcf) y guardar tu registro.
-                                </p>
-
-                                <div className="w-full p-4 bg-navy/40 rounded-2xl border border-white/5 text-left mb-6">
-                                    <p className="text-[10px] uppercase tracking-widest text-white/40 mb-2 font-black">Tu Enlace Personal</p>
-                                    <p className="text-primary font-black text-lg tracking-tight">registrameya.com/card/{generateSlug(formData.name)}</p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* SUCCESS STEP */}
-                    {step === 6 && (
-                        <div className="max-w-xl mx-auto text-center py-20 px-6">
+                        <div className="max-w-2xl mx-auto text-center">
                             <motion.div
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
@@ -838,18 +910,23 @@ export default function RegisterWizard() {
                             >
                                 <CheckCircle size={56} strokeWidth={2.5} />
                             </motion.div>
-                            <h2 className="text-4xl md:text-5xl font-black text-navy mb-6 tracking-tighter uppercase italic">¡Orden en Marcha!</h2>
-                            <p className="text-xl text-navy/60 font-medium leading-relaxed mb-12">
-                                Estamos configurando tu <span className="text-navy font-bold">Tarjeta Digital de Presentación</span>. En <span className="text-primary font-black">exactamente 1 hora</span> recibirás tu entrega por WhatsApp y Correo.
+                            <h2 className="text-3xl md:text-4xl font-black text-navy tracking-tighter uppercase italic mb-4">¡Registro Recibido!</h2>
+                            <p className="text-navy/60 font-medium text-lg mb-8">
+                                Tu solicitud ha sido enviada con éxito.
+                                <br />
+                                <span className="font-bold text-primary">Nuestro equipo revisará tu perfil</span> y te enviará tu Contacto Digital y Código QR a tu correo electrónico en breve.
                             </p>
 
-                            <div className="inline-flex items-center gap-6 p-8 bg-white rounded-[40px] shadow-soft border-2 border-primary/5">
-                                <div className="w-16 h-16 bg-primary text-white rounded-full flex items-center justify-center shadow-orange">
-                                    <Zap size={32} />
-                                </div>
-                                <div className="text-left">
-                                    <p className="font-black text-navy leading-none uppercase tracking-tighter italic text-2xl">Garantía 60 Minutos</p>
-                                    <p className="text-[10px] text-navy/40 mt-1 uppercase font-black tracking-widest">Si no está a tiempo, el servicio es GRATIS.</p>
+                            <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl shadow-navy/5 border border-navy/5 relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary via-accent to-primary" />
+                                <div className="flex items-center gap-4 justify-center">
+                                    <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center">
+                                        <Mail size={32} />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="font-black text-navy text-lg">Revisa tu correo</p>
+                                        <p className="text-sm text-navy/60">{formData.email}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
