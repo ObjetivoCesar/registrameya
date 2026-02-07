@@ -366,18 +366,32 @@ export default function RegisterWizard() {
                 etiquetas: finalCategories
             };
 
+            console.log("3. UPSERT: Enviando a Supabase...");
             const { error: upsertError } = await supabase
                 .from('registraya_vcard_registros')
                 .upsert(upsertData, { onConflict: 'email' });
 
-            if (upsertError) {
-                console.error("Supabase Upsert Error Detail:", upsertError);
-                throw upsertError;
+            console.log("4. REGISTRO COMPLETADO!");
+
+            // 5. GENERAR Y DESCARGAR VCARD AUTOMÁTICAMENTE
+            try {
+                const vcardContent = generateVCard(formData, photoBase64, galleryUrls, finalCategories);
+                const blob = new Blob([vcardContent], { type: 'text/vcard;charset=utf-8' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `${slug}.vcf`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+                console.log("5. vCard descargada con éxito");
+            } catch (vcardErr) {
+                console.error("Error al generar/descargar vCard:", vcardErr);
+                // No bloqueamos el flujo si falla la descarga
             }
 
-            // 4. NOTIFICACIÓN FINAL (Sin descarga automática)
-            // El usuario admin aprobará y enviará el correo desde el panel.
-
+            setIsSubmitting(false);
             setStep(6); // Ir a pantalla de "En Revisión"
         } catch (err) {
             console.error("Full Error Context:", err);
@@ -443,36 +457,58 @@ export default function RegisterWizard() {
     // PayPhone Button Initialization Effect (Box v1.1)
     useEffect(() => {
         if (step === 5 && formData.paymentMethod === 'payphone') {
-            const timer = setTimeout(() => {
-                if ((window as any).PPaymentButtonBox) {
+            const initButton = () => {
+                const PBox = (window as any).PPaymentButtonBox;
+                if (PBox) {
                     const btnContainer = document.getElementById('pp-button');
-                    if (btnContainer && btnContainer.innerHTML === "") {
+                    if (btnContainer) {
+                        // Limpiar el contenedor por si acaso
+                        btnContainer.innerHTML = "";
+
                         const currentPlanPrice = formData.plan === 'pro' ? 20 : 10;
                         const amountInCents = currentPlanPrice * 100;
                         const transactionId = `reg_${Date.now()}_${formData.name.replace(/\s+/g, '_')}`;
 
-                        const ppb = new (window as any).PPaymentButtonBox({
-                            token: process.env.NEXT_PUBLIC_PAYPHONE_TOKEN,
+                        console.log("Inicializando PayPhone Box con:", {
+                            token: process.env.NEXT_PUBLIC_PAYPHONE_TOKEN?.substring(0, 10) + "...",
                             amount: amountInCents,
-                            amountWithoutTax: amountInCents,
-                            currency: "USD",
-                            clientTransactionId: transactionId,
-                            storeId: process.env.NEXT_PUBLIC_PAYPHONE_STORE_ID,
-                            reference: `Pago Plan ${formData.plan.toUpperCase()} - ${formData.name}`,
-                            lang: "es",
-                            onComplete: async (model: any, actions: any) => {
-                                console.log("Pago completado con éxito:", model);
-                                handleFinalSubmit('pagado');
-                            },
-                            onCancel: (data: any) => {
-                                console.log("Pago cancelado por el usuario");
-                            }
+                            storeId: process.env.NEXT_PUBLIC_PAYPHONE_STORE_ID
                         });
 
-                        ppb.render("pp-button");
+                        try {
+                            const ppb = new PBox({
+                                token: process.env.NEXT_PUBLIC_PAYPHONE_TOKEN,
+                                amount: amountInCents,
+                                amountWithoutTax: amountInCents,
+                                currency: "USD",
+                                clientTransactionId: transactionId,
+                                storeId: process.env.NEXT_PUBLIC_PAYPHONE_STORE_ID,
+                                reference: `Pago Plan ${formData.plan.toUpperCase()} - ${formData.name}`,
+                                lang: "es",
+                                onComplete: async (model: any, actions: any) => {
+                                    console.log("Pago completado con éxito:", model);
+                                    handleFinalSubmit('pagado');
+                                },
+                                onCancel: (data: any) => {
+                                    console.log("Pago cancelado por el usuario");
+                                }
+                            });
+
+                            ppb.render("pp-button");
+                            console.log("PayPhone Box renderizado con éxito");
+                        } catch (err) {
+                            console.error("Error al instanciar PayPhone Box:", err);
+                        }
+                    } else {
+                        console.warn("No se encontró el contenedor #pp-button");
                     }
+                } else {
+                    console.warn("Script de PayPhone cargado pero PPaymentButtonBox no está disponible");
                 }
-            }, 300);
+            };
+
+            // Intentar inicializar con un pequeño delay para asegurar render del DOM
+            const timer = setTimeout(initButton, 500);
             return () => clearTimeout(timer);
         }
     }, [step, formData.paymentMethod, payphoneInitialized]);
@@ -1096,8 +1132,10 @@ export default function RegisterWizard() {
                                             Paga de forma segura con tu tarjeta de crédito o débito a través de **PayPhone**. La activación es más rápida.
                                         </p>
 
-                                        <div className="flex justify-center min-h-[100px] items-center">
-                                            <div id="pp-button"></div>
+                                        <div className="flex justify-center items-center mt-6 w-full">
+                                            <div className="bg-white p-4 md:p-6 rounded-[30px] shadow-2xl w-full max-w-md overflow-hidden border border-gray-100">
+                                                <div id="pp-button" className="w-full min-h-[450px] flex justify-center text-navy" style={{ color: '#001a33' }}></div>
+                                            </div>
                                         </div>
                                     </motion.div>
                                 )}
@@ -1105,8 +1143,9 @@ export default function RegisterWizard() {
 
                             <Script
                                 src="https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js"
-                                strategy="lazyOnload"
+                                strategy="afterInteractive"
                                 onLoad={() => {
+                                    console.log("Script de PayPhone Box v1.1 cargado");
                                     setPayphoneInitialized(true);
                                 }}
                             />
