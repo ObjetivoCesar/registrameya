@@ -12,35 +12,21 @@ interface VideoStepGuideProps {
 }
 
 const stepVideos: Record<number, string> = {
-    1: "/videos/step1-welcome.mp4",
-    2: "/videos/step2-personal.mp4",
-    3: "/videos/step3-bio.mp4",
-    4: "/videos/step4-products.mp4",
-    5: "/videos/step5-payment.mp4",
-    6: "/videos/step6-success.mp4",
+    1: "TuDbyx2nVUs",
+    2: "05L7n46UTVg",
+    3: "6RR-efvsAr4",
+    4: "QDQnK8hPMHY",
+    5: "BbT8dYvNoHU",
+    6: "aJbOc4o3VKc",
 };
 
 export default function VideoStepGuide({ step, isVisible, onClose }: VideoStepGuideProps) {
     const [isMinimized, setIsMinimized] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(true);
-    const videoRef = useRef<HTMLVideoElement>(null);
-
-    useEffect(() => {
-        if (videoRef.current) {
-            videoRef.current.load();
-            if (isPlaying) videoRef.current.play().catch(() => setIsPlaying(false));
-        }
-    }, [step]);
-
-    const togglePlay = () => {
-        if (videoRef.current) {
-            if (isPlaying) videoRef.current.pause();
-            else videoRef.current.play();
-            setIsPlaying(!isPlaying);
-        }
-    };
 
     if (!isVisible) return null;
+
+    const videoId = stepVideos[step] || stepVideos[1];
+    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&controls=1`;
 
     return (
         <AnimatePresence>
@@ -50,7 +36,7 @@ export default function VideoStepGuide({ step, isVisible, onClose }: VideoStepGu
                     opacity: 1,
                     y: 0,
                     scale: 1,
-                    width: isMinimized ? "60px" : "280px",
+                    width: isMinimized ? "60px" : "300px",
                     height: isMinimized ? "60px" : "auto"
                 }}
                 exit={{ opacity: 0, y: 50, scale: 0.9 }}
@@ -67,7 +53,7 @@ export default function VideoStepGuide({ step, isVisible, onClose }: VideoStepGu
                 ) : (
                     <div className="relative group">
                         {/* Header Control */}
-                        <div className="absolute top-3 right-3 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute top-3 right-3 z-[110] flex gap-2">
                             <button
                                 onClick={(e) => { e.stopPropagation(); setIsMinimized(true); }}
                                 className="w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
@@ -82,35 +68,22 @@ export default function VideoStepGuide({ step, isVisible, onClose }: VideoStepGu
                             </button>
                         </div>
 
-                        {/* Video Layer */}
-                        <div className="aspect-[16/9] w-full bg-black relative">
-                            <video
-                                ref={videoRef}
-                                className="w-full h-full object-cover"
-                                onPlay={() => setIsPlaying(true)}
-                                onPause={() => setIsPlaying(false)}
-                                loop
-                                playsInline
-                                muted
-                                autoPlay
-                            >
-                                <source src={stepVideos[step] || stepVideos[1]} type="video/mp4" />
-                            </video>
-
-                            {/* Overlay Play/Pause */}
-                            <div
-                                className="absolute inset-0 cursor-pointer flex items-center justify-center bg-black/5 hover:bg-black/20 transition-colors"
-                                onClick={togglePlay}
-                            >
-                                {!isPlaying && <Play size={40} className="text-white opacity-80" />}
-                            </div>
+                        {/* Video Layer (YouTube Embed) */}
+                        <div className="aspect-[9/16] w-full bg-black relative">
+                            <iframe
+                                src={embedUrl}
+                                title="Guía Alejandra"
+                                className="w-full h-full"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                            />
                         </div>
 
                         {/* Caption Area */}
-                        <div className="p-4 pt-3 flex items-center gap-3">
+                        <div className="p-4 pt-3 flex items-center gap-3 bg-navy">
                             <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                             <p className="text-[10px] font-black uppercase tracking-widest text-white/80">
-                                Guía en Vivo: Paso {step}
+                                Guía Alejandra: Paso {step}
                             </p>
                         </div>
                     </div>
