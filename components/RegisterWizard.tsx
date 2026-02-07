@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Script from "next/script";
 import QRCode from 'qrcode';
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -35,6 +36,7 @@ const steps = [
     { id: 3, title: 'Visual', icon: Camera },
     { id: 4, title: 'Plan', icon: Zap },
     { id: 5, title: 'Pago', icon: Smartphone },
+    { id: 6, title: 'Final', icon: CheckCircle },
 ];
 
 const INDUSTRY_TAGS: Record<string, string[]> = {
@@ -73,6 +75,8 @@ export default function RegisterWizard() {
         photo: null as File | null,
         gallery: [] as File[],
         receipt: null as File | null,
+        receiptUrl: '',
+        paymentMethod: 'transfer' as 'transfer' | 'payphone',
     });
 
     const [emailError, setEmailError] = useState('');
@@ -81,6 +85,8 @@ export default function RegisterWizard() {
     const [isGeneratingTags, setIsGeneratingTags] = useState(false);
 
     const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+    const [payphoneInitialized, setPayphoneInitialized] = useState(false);
+    const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
 
     const generateWithAI = async () => {
         if (!formData.profession) {
@@ -268,7 +274,7 @@ export default function RegisterWizard() {
         return vcard;
     };
 
-    const handleFinalSubmit = async () => {
+    const handleFinalSubmit = async (forcedStatus?: string) => {
         setIsSubmitting(true);
         try {
             let photoUrl = null;
@@ -315,7 +321,11 @@ export default function RegisterWizard() {
             }
 
             if (formData.receipt) {
-                receiptUrl = await compressAndUpload(formData.receipt, 'vcards', `receipts/${timestamp}-${formData.receipt.name}`);
+                if (formData.receiptUrl) {
+                    receiptUrl = formData.receiptUrl;
+                } else {
+                    receiptUrl = await compressAndUpload(formData.receipt, 'vcards', `receipts/${timestamp}-${formData.receipt.name}`);
+                }
             } else if (existingUser) {
                 receiptUrl = existingUser.comprobante_url;
             }
@@ -351,7 +361,7 @@ export default function RegisterWizard() {
                 foto_url: photoUrl,
                 comprobante_url: receiptUrl,
                 galeria_urls: galleryUrls,
-                status: 'pendiente',
+                status: forcedStatus || 'pendiente',
                 slug: slug,
                 etiquetas: finalCategories
             };
@@ -368,8 +378,7 @@ export default function RegisterWizard() {
             // 4. NOTIFICACIÓN FINAL (Sin descarga automática)
             // El usuario admin aprobará y enviará el correo desde el panel.
 
-            setIsSubmitting(false);
-            setStep(5); // Ir a pantalla de "En Revisión"
+            setStep(6); // Ir a pantalla de "En Revisión"
         } catch (err) {
             console.error("Full Error Context:", err);
             const msg = err instanceof Error ? err.message : JSON.stringify(err);
@@ -398,9 +407,75 @@ export default function RegisterWizard() {
 
     const handleBack = () => setStep(s => Math.max(s - 1, 1));
 
+    const handleWhatsAppNotification = async () => {
+        if (!formData.receipt && !formData.receiptUrl) {
+            alert("Por favor sube tu comprobante primero.");
+            return;
+        }
+
+        setIsUploadingReceipt(true);
+        try {
+            let finalReceiptUrl = formData.receiptUrl;
+
+            // Si hay un archivo nuevo y no se ha subido, subirlo ahora
+            if (formData.receipt && !finalReceiptUrl) {
+                const timestamp = Date.now();
+                finalReceiptUrl = await compressAndUpload(formData.receipt, 'vcards', `receipts/${timestamp}-${formData.receipt.name}`);
+                updateForm('receiptUrl', finalReceiptUrl);
+            }
+
+            const currentPlanPrice = formData.plan === 'pro' ? 20 : 10;
+            const text = `¡Hola! Soy ${formData.name}. He completado mi registro para el Plan ${formData.plan.toUpperCase()} ($${currentPlanPrice}.00) y adjunto mi comprobante de pago aquí: ${finalReceiptUrl}`;
+
+            window.open(`https://wa.me/593984180800?text=${encodeURIComponent(text)}`, '_blank');
+        } catch (error) {
+            console.error("Error al subir comprobante para WhatsApp:", error);
+            alert("Error al procesar el comprobante. Por favor intenta de nuevo.");
+        } finally {
+            setIsUploadingReceipt(false);
+        }
+    };
+
     const updateForm = (field: string, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
+
+    // PayPhone Button Initialization Effect (Box v1.1)
+    useEffect(() => {
+        if (step === 5 && formData.paymentMethod === 'payphone') {
+            const timer = setTimeout(() => {
+                if ((window as any).PPaymentButtonBox) {
+                    const btnContainer = document.getElementById('pp-button');
+                    if (btnContainer && btnContainer.innerHTML === "") {
+                        const currentPlanPrice = formData.plan === 'pro' ? 20 : 10;
+                        const amountInCents = currentPlanPrice * 100;
+                        const transactionId = `reg_${Date.now()}_${formData.name.replace(/\s+/g, '_')}`;
+
+                        const ppb = new (window as any).PPaymentButtonBox({
+                            token: process.env.NEXT_PUBLIC_PAYPHONE_TOKEN,
+                            amount: amountInCents,
+                            amountWithoutTax: amountInCents,
+                            currency: "USD",
+                            clientTransactionId: transactionId,
+                            storeId: process.env.NEXT_PUBLIC_PAYPHONE_STORE_ID,
+                            reference: `Pago Plan ${formData.plan.toUpperCase()} - ${formData.name}`,
+                            lang: "es",
+                            onComplete: async (model: any, actions: any) => {
+                                console.log("Pago completado con éxito:", model);
+                                handleFinalSubmit('pagado');
+                            },
+                            onCancel: (data: any) => {
+                                console.log("Pago cancelado por el usuario");
+                            }
+                        });
+
+                        ppb.render("pp-button");
+                    }
+                }
+            }, 300);
+            return () => clearTimeout(timer);
+        }
+    }, [step, formData.paymentMethod, payphoneInitialized]);
 
     const currentPlanPrice = formData.plan === 'basic' ? 10 : 20;
 
@@ -900,8 +975,146 @@ export default function RegisterWizard() {
                         </div>
                     )}
 
-                    {/* STEP 5: EN REVISIÓN */}
+                    {/* STEP 5: PAGO */}
                     {step === 5 && (
+                        <div className="max-w-3xl mx-auto text-white">
+                            <div className="text-center mb-10">
+                                <h2 className="text-3xl md:text-5xl font-black text-primary tracking-tighter uppercase italic mb-2">Método de Pago</h2>
+                                <p className="text-white/60 text-sm">Tu inversión para tu nueva presencia digital: ${currentPlanPrice}.00</p>
+                            </div>
+
+                            <div className="flex bg-white/5 p-2 rounded-3xl mb-10 max-w-sm mx-auto">
+                                <button
+                                    onClick={() => updateForm('paymentMethod', 'transfer')}
+                                    className={cn(
+                                        "flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all",
+                                        formData.paymentMethod === 'transfer' ? "bg-primary text-white shadow-lg" : "text-white/40 hover:text-white/60"
+                                    )}
+                                >
+                                    Transferencia
+                                </button>
+                                <button
+                                    onClick={() => updateForm('paymentMethod', 'payphone')}
+                                    className={cn(
+                                        "flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all",
+                                        formData.paymentMethod === 'payphone' ? "bg-primary text-white shadow-lg" : "text-white/40 hover:text-white/60"
+                                    )}
+                                >
+                                    PayPhone
+                                </button>
+                            </div>
+
+                            <AnimatePresence mode="wait">
+                                {formData.paymentMethod === 'transfer' ? (
+                                    <motion.div
+                                        key="transfer"
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 10 }}
+                                        className="grid grid-cols-1 md:grid-cols-2 gap-8"
+                                    >
+                                        <div className="bg-white/5 p-8 rounded-[40px] border border-white/10">
+                                            <h3 className="text-primary font-black uppercase italic tracking-tighter text-xl mb-6">Datos del Banco</h3>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-1">Banco</p>
+                                                    <p className="font-bold text-lg">BANCO PICHINCHA</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-1">Tipo de Cuenta</p>
+                                                    <p className="font-bold">Ahorros</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-1">Número de Cuenta</p>
+                                                    <p className="font-black text-xl text-primary">2100223344</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-1">Titular</p>
+                                                    <p className="font-bold">César Reyes Jaramillo</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-1">ID / RUC</p>
+                                                    <p className="font-bold">1712345678</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-6">
+                                            <div className="bg-primary/10 p-6 rounded-3xl border border-primary/20">
+                                                <p className="text-xs font-bold leading-relaxed">
+                                                    Una vez realizada la transferencia, sube el comprobante aquí y haz clic en <span className="text-primary font-black uppercase">Finalizar Registro</span>.
+                                                </p>
+                                            </div>
+
+                                            <div className="relative group">
+                                                <div className="w-full h-40 rounded-3xl bg-white/5 border-2 border-dashed border-white/10 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-all overflow-hidden relative">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*,.pdf"
+                                                        onChange={(e) => updateForm('receipt', e.target.files?.[0] || null)}
+                                                        className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                                    />
+                                                    {formData.receipt ? (
+                                                        <div className="flex flex-col items-center p-4">
+                                                            <CheckCircle className="text-primary mb-2" size={32} />
+                                                            <p className="text-[10px] font-black text-white uppercase tracking-widest truncate max-w-[200px]">
+                                                                {formData.receipt.name}
+                                                            </p>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <FileText className="text-white/10 group-hover:text-primary transition-colors mb-3" size={40} />
+                                                            <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Subir Comprobante</span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                onClick={handleWhatsAppNotification}
+                                                disabled={isUploadingReceipt}
+                                                className="w-full py-4 bg-green-500 rounded-2xl text-[10px] font-black text-white uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-green-600 transition-colors disabled:opacity-50"
+                                            >
+                                                {isUploadingReceipt ? <Loader2 size={16} className="animate-spin" /> : <Smartphone size={16} />}
+                                                {isUploadingReceipt ? 'Subiendo...' : 'Notificar por WhatsApp'}
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                ) : (
+                                    <motion.div
+                                        key="payphone"
+                                        initial={{ opacity: 0, x: 10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -10 }}
+                                        className="text-center bg-white/5 p-12 rounded-[50px] border border-white/10 max-w-xl mx-auto"
+                                    >
+                                        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-8">
+                                            <Zap className="text-primary" size={40} />
+                                        </div>
+                                        <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-4">Pago Instantáneo</h3>
+                                        <p className="text-white/60 text-sm mb-10 leading-relaxed font-medium">
+                                            Paga de forma segura con tu tarjeta de crédito o débito a través de **PayPhone**. La activación es más rápida.
+                                        </p>
+
+                                        <div className="flex justify-center min-h-[100px] items-center">
+                                            <div id="pp-button"></div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            <Script
+                                src="https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js"
+                                strategy="lazyOnload"
+                                onLoad={() => {
+                                    setPayphoneInitialized(true);
+                                }}
+                            />
+                        </div>
+                    )}
+
+                    {/* STEP 6: EN REVISIÓN */}
+                    {step === 6 && (
                         <div className="max-w-2xl mx-auto text-center">
                             <motion.div
                                 initial={{ scale: 0 }}
@@ -960,7 +1173,7 @@ export default function RegisterWizard() {
                                     isSubmitting && "opacity-50 cursor-not-allowed"
                                 )}
                             >
-                                {step === 5 ? (isSubmitting ? 'Procesando...' : 'Descargar vCard') : 'Siguiente'} <ArrowRight size={20} />
+                                {step === 5 ? (isSubmitting ? 'Procesando...' : 'Finalizar Registro') : 'Siguiente'} <ArrowRight size={20} />
                             </button>
                         </div>
                     )}
