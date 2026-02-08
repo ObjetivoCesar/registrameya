@@ -140,7 +140,7 @@ export default function QuizPage() {
 
     const finishQuiz = async (finalAnswers: any) => {
         setIsSubmitting(true);
-        setCurrentStep("PANTALLA_FINAL");
+        setCurrentStep("P_FINAL");
 
         // Calcular Arquetipo (Lógica simple de mayoría)
         let counts = { fantasma: 0, caos: 0, lider: 0 };
@@ -249,7 +249,7 @@ export default function QuizPage() {
                 <div className="max-w-lg mx-auto w-full">
                     {/* Progress */}
                     <div className="flex gap-2 mb-8">
-                        {Object.keys(QUESTIONS).filter(k => k !== "PANTALLA_FINAL").map((qId) => (
+                        {Object.keys(QUESTIONS).filter(k => k !== "P_FINAL").map((qId) => (
                             <div key={qId} className={cn("h-1 flex-1 rounded-full transition-all",
                                 Object.keys(answers).includes(qId) || currentStep === qId ? "bg-primary" : "bg-slate-200"
                             )} />
@@ -283,7 +283,7 @@ export default function QuizPage() {
                             </div>
 
                             {/* Loading State */}
-                            {currentStep === "PANTALLA_FINAL" && (
+                            {currentStep === "P_FINAL" && (
                                 <div className="text-center py-12">
                                     <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-6"></div>
                                     <p className="text-navy/60 font-bold animate-pulse">Procesando tus respuestas...</p>
