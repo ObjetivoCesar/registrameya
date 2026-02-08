@@ -311,7 +311,7 @@ export default function Home() {
         </p>
       </footer>
 
-      <VideoModal isOpen={isVideoModalOpen} onClose={() => setIsVideoModalOpen(false)} videoId="c1gNsQjKZ_Q" />
+      <VideoModal isOpen={isVideoModalOpen} onClose={() => setIsVideoModalOpen(false)} videoId="Iy69aXd7MFI" />
       <PopupManager />
     </main>
   );
