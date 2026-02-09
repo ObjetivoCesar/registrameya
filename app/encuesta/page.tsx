@@ -325,11 +325,11 @@ export default function SurveyPage() {
                 </button>
 
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
+                    initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="max-w-4xl w-full bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px]"
+                    className="max-w-4xl w-full bg-white rounded-[32px] shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[500px]"
                 >
-                    <div className="flex-1 p-8 md:p-12 flex flex-col justify-center items-start text-left">
+                    <div className="flex-1 p-8 md:p-12 lg:p-16 flex flex-col justify-center">
                         <span className="text-xs font-bold uppercase tracking-widest text-navy/40 mb-4">Resultado Personalizado</span>
                         <h2 className="text-4xl md:text-5xl font-black text-navy mb-4 leading-tight">
                             <span className={cn(
@@ -364,7 +364,7 @@ export default function SurveyPage() {
                     </div>
 
                     <div className={cn(
-                        "w-full md:w-1/3 p-12 flex flex-col justify-center items-center text-white relative overflow-hidden",
+                        "w-full md:w-1/3 p-12 flex flex-col justify-center items-center text-white relative overflow-hidden min-h-[200px]",
                         trafficLight.color === 'verde' ? "bg-red-600" :
                             trafficLight.color === 'amarillo' ? "bg-primary" :
                                 "bg-emerald-600"
@@ -459,105 +459,129 @@ export default function SurveyPage() {
                 </div>
             </div>
 
-            {/* DERECHA: SELECCIÓN */}
-            <div className="flex-1 bg-white p-8 md:p-12 lg:p-20 flex flex-col justify-center relative min-h-screen">
-                <div className="max-w-md mx-auto w-full">
-                    {/* Progress Indicator */}
-                    <div className="flex items-center gap-3 mb-12">
-                        <div className="flex flex-1 gap-1.5 h-1.5">
-                            {["P1", "P2", "P3", "P4", "P5", "P6", "P7", "LL"].map((qId, idx) => {
-                                const stepsArr = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "LL"];
-                                const currentVisualId = currentStep.startsWith("P2") ? "P2" :
-                                    currentStep === "LLENAR_NOMBRE" ? "LL" : currentStep;
-                                const activeIdx = stepsArr.indexOf(currentVisualId);
-                                const isDone = activeIdx > idx;
-                                const isActive = activeIdx === idx;
-                                return (
-                                    <div key={idx} className={cn(
-                                        "flex-1 rounded-full transition-all duration-700",
-                                        isDone ? "bg-navy/10" : isActive ? "bg-primary scale-x-110" : "bg-slate-100"
-                                    )} />
-                                );
-                            })}
+            {/* DERECHA: SELECCIÓN (Contenedor Principal con Efecto Glass en Móvil) */}
+            <div className="flex-1 relative min-h-screen flex flex-col justify-start md:justify-center overflow-y-auto">
+                {/* Fondo Glass para Móvil */}
+                <div className="absolute inset-0 md:hidden z-0">
+                    <img
+                        src={question.image}
+                        className="w-full h-full object-cover blur-2xl scale-110 opacity-40"
+                        alt=""
+                    />
+                    <div className="absolute inset-0 bg-navy/60"></div>
+                </div>
+
+                <div className="relative z-10 flex-1 bg-white md:bg-white p-6 md:p-12 lg:p-20 flex flex-col justify-start md:justify-center">
+                    <div className="max-w-md mx-auto w-full pt-20 md:pt-0">
+                        {/* Contenido Visual en Móvil (Título y Desc) */}
+                        <div className="mb-8 md:hidden space-y-4">
+                            <div className="inline-flex items-center gap-2 bg-primary/10 backdrop-blur-md px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-primary border border-primary/20">
+                                Test de Visibilidad
+                            </div>
+                            <h1 className="text-3xl font-black text-navy leading-tight">
+                                {question.dynamicTitle ? question.dynamicTitle(answers) : question.title}
+                            </h1>
+                            <p className="text-lg text-navy/60 font-medium italic leading-relaxed">
+                                &quot;{question.description}&quot;
+                            </p>
                         </div>
-                        <span className="text-[10px] font-black text-navy/40 uppercase tracking-tighter w-8 text-right">
-                            {Math.round(((stepHistory.length + 1) / 8) * 100)}%
-                        </span>
-                    </div>
 
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={currentStep}
-                            initial={{ opacity: 0, y: 15 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -15 }}
-                            transition={{ duration: 0.4 }}
-                        >
-                            {currentStep === "LLENAR_NOMBRE" ? (
-                                <div className="space-y-8">
-                                    <h2 className="text-4xl font-black text-navy leading-tight">
-                                        {question.title}
-                                    </h2>
-                                    <p className="text-navy/50 font-bold mb-8 italic text-lg leading-relaxed">
-                                        {question.description}
-                                    </p>
-                                    <div className="relative group">
-                                        <div className="absolute inset-y-0 left-6 flex items-center text-navy/20 group-focus-within:text-primary transition-colors">
-                                            <Building2 size={24} />
+                        {/* Progress Indicator */}
+                        <div className="flex items-center gap-3 mb-12">
+                            <div className="flex flex-1 gap-1.5 h-1.5">
+                                {["P1", "P2", "P3", "P4", "P5", "P6", "P7", "LL"].map((qId, idx) => {
+                                    const stepsArr = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "LL"];
+                                    const currentVisualId = currentStep.startsWith("P2") ? "P2" :
+                                        currentStep === "LLENAR_NOMBRE" ? "LL" : currentStep;
+                                    const activeIdx = stepsArr.indexOf(currentVisualId);
+                                    const isDone = activeIdx > idx;
+                                    const isActive = activeIdx === idx;
+                                    return (
+                                        <div key={idx} className={cn(
+                                            "flex-1 rounded-full transition-all duration-700",
+                                            isDone ? "bg-navy/10" : isActive ? "bg-primary" : "bg-navy/5"
+                                        )} />
+                                    );
+                                })}
+                            </div>
+                            <span className="text-[10px] font-black text-navy/30 uppercase tracking-tighter w-8 text-right">
+                                {Math.round(((stepHistory.length + 1) / 8) * 100)}%
+                            </span>
+                        </div>
+
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={currentStep}
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -15 }}
+                                transition={{ duration: 0.4 }}
+                            >
+                                {currentStep === "LLENAR_NOMBRE" ? (
+                                    <div className="space-y-8">
+                                        <h2 className="text-4xl font-black text-navy leading-tight">
+                                            {question.title}
+                                        </h2>
+                                        <p className="text-navy/50 font-bold mb-8 italic text-lg leading-relaxed">
+                                            {question.description}
+                                        </p>
+                                        <div className="relative group">
+                                            <div className="absolute inset-y-0 left-6 flex items-center text-navy/20 group-focus-within:text-primary transition-colors">
+                                                <Building2 size={24} />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={respondentName}
+                                                onChange={(e) => setRespondentName(e.target.value)}
+                                                placeholder="Tu nombre o negocio..."
+                                                className="w-full pl-16 pr-6 py-6 bg-slate-50 border-2 border-transparent rounded-[2rem] text-xl font-bold outline-none focus:border-primary/20 focus:bg-white transition-all shadow-inner"
+                                                autoFocus
+                                            />
                                         </div>
-                                        <input
-                                            type="text"
-                                            value={respondentName}
-                                            onChange={(e) => setRespondentName(e.target.value)}
-                                            placeholder="Tu nombre o negocio..."
-                                            className="w-full pl-16 pr-6 py-6 bg-slate-50 border-2 border-transparent rounded-[2rem] text-xl font-bold outline-none focus:border-primary/20 focus:bg-white transition-all shadow-inner"
-                                            autoFocus
-                                        />
+                                        <button
+                                            disabled={!respondentName || isSaving}
+                                            onClick={finalizeSurvey}
+                                            className="w-full bg-navy text-white p-6 rounded-[2rem] font-black text-xl hover:bg-navy/90 hover:scale-[1.02] shadow-2xl transition-all disabled:opacity-30 disabled:scale-100 flex items-center justify-center gap-3"
+                                        >
+                                            {isSaving ? "Calculando..." : "Ver Mi Diagnóstico"}
+                                            <ArrowRight size={24} />
+                                        </button>
                                     </div>
-                                    <button
-                                        disabled={!respondentName || isSaving}
-                                        onClick={finalizeSurvey}
-                                        className="w-full bg-navy text-white p-6 rounded-[2rem] font-black text-xl hover:bg-navy/90 hover:scale-[1.02] shadow-2xl transition-all disabled:opacity-30 disabled:scale-100 flex items-center justify-center gap-3"
-                                    >
-                                        {isSaving ? "Calculando..." : "Ver Mi Diagnóstico"}
-                                        <ArrowRight size={24} />
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="space-y-6">
-                                    <div className="flex items-center gap-3 mb-8">
-                                        <div className="h-0.5 w-6 bg-primary opacity-30"></div>
-                                        <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Elige una opción</p>
-                                    </div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        <div className="flex items-center gap-3 mb-8">
+                                            <div className="h-0.5 w-6 bg-primary opacity-30"></div>
+                                            <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Elige una opción</p>
+                                        </div>
 
-                                    <div className="space-y-3.5">
-                                        {question.options.map((option) => (
-                                            <button
-                                                key={option.id}
-                                                onClick={() => handleOptionSelect(option)}
-                                                className="group w-full text-left p-6 rounded-[2rem] border-2 border-slate-50 bg-slate-50/30 hover:bg-white hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 transition-all flex items-center justify-between"
-                                            >
-                                                <div className="flex items-center gap-4">
-                                                    <div className="bg-white p-3 rounded-2xl shadow-sm group-hover:bg-primary/10 group-hover:text-primary transition-all">
-                                                        {option.icon ? <option.icon size={22} /> : <Target size={22} />}
+                                        <div className="space-y-3.5">
+                                            {question.options.map((option) => (
+                                                <button
+                                                    key={option.id}
+                                                    onClick={() => handleOptionSelect(option)}
+                                                    className="group w-full text-left p-6 rounded-[2rem] border-2 border-slate-50 bg-slate-50/30 hover:bg-white hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 transition-all flex items-center justify-between"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="bg-white p-3 rounded-2xl shadow-sm group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                                                            {option.icon ? <option.icon size={22} /> : <Target size={22} />}
+                                                        </div>
+                                                        <span className="text-lg font-bold text-navy/80 tracking-tight group-hover:text-navy transition-colors leading-snug">
+                                                            {option.label}
+                                                        </span>
                                                     </div>
-                                                    <span className="text-lg font-bold text-navy/80 tracking-tight group-hover:text-navy transition-colors leading-snug">
-                                                        {option.label}
-                                                    </span>
-                                                </div>
-                                                <div className="bg-navy/5 p-2 rounded-xl group-hover:bg-primary group-hover:text-white transition-all opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0">
-                                                    <ChevronRight size={20} />
-                                                </div>
-                                            </button>
-                                        ))}
+                                                    <div className="bg-navy/5 p-2 rounded-xl group-hover:bg-primary group-hover:text-white transition-all opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0">
+                                                        <ChevronRight size={20} />
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
-                        </motion.div>
-                    </AnimatePresence>
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
+                    </div>
                 </div>
             </div>
-
             <p className="fixed bottom-6 right-10 text-[10px] font-black uppercase tracking-[0.4em] text-navy/20 hidden lg:block transform rotate-90 origin-right">
                 Diagnóstico Universal v2.0
             </p>
