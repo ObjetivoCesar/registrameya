@@ -641,19 +641,27 @@ export default function AdminDashboard() {
                                         <div>
                                             <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Bio / Descripción</label>
                                             <textarea
-                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all resize-none"
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all resize-none overflow-hidden"
                                                 rows={3}
                                                 value={editingRegistro.bio || ''}
-                                                onChange={e => setEditingRegistro({ ...editingRegistro, bio: e.target.value })}
+                                                onChange={e => {
+                                                    setEditingRegistro({ ...editingRegistro, bio: e.target.value });
+                                                    e.target.style.height = 'auto';
+                                                    e.target.style.height = `${e.target.scrollHeight}px`;
+                                                }}
                                             />
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Productos / Servicios</label>
                                             <textarea
-                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all resize-none"
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all resize-none overflow-hidden"
                                                 rows={3}
                                                 value={editingRegistro.productos_servicios || ''}
-                                                onChange={e => setEditingRegistro({ ...editingRegistro, productos_servicios: e.target.value })}
+                                                onChange={e => {
+                                                    setEditingRegistro({ ...editingRegistro, productos_servicios: e.target.value });
+                                                    e.target.style.height = 'auto';
+                                                    e.target.style.height = `${e.target.scrollHeight}px`;
+                                                }}
                                             />
                                         </div>
                                         <div>

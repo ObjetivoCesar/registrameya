@@ -761,10 +761,14 @@ export default function RegisterWizard() {
                                     </div>
                                     <textarea
                                         value={formData.bio}
-                                        onChange={(e) => updateForm('bio', e.target.value)}
+                                        onChange={(e) => {
+                                            updateForm('bio', e.target.value);
+                                            e.target.style.height = 'auto';
+                                            e.target.style.height = `${e.target.scrollHeight}px`;
+                                        }}
                                         placeholder="Cuéntales qué ofreces..."
                                         rows={2}
-                                        className="w-full bg-white/50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-6 py-5 outline-none font-bold text-navy transition-all shadow-sm resize-none"
+                                        className="w-full bg-white/50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-6 py-5 outline-none font-bold text-navy transition-all shadow-sm resize-none overflow-hidden"
                                     />
                                 </div>
 
@@ -797,10 +801,14 @@ export default function RegisterWizard() {
                                     </div>
                                     <textarea
                                         value={formData.products}
-                                        onChange={(e) => updateForm('products', e.target.value)}
+                                        onChange={(e) => {
+                                            updateForm('products', e.target.value);
+                                            e.target.style.height = 'auto';
+                                            e.target.style.height = `${e.target.scrollHeight}px`;
+                                        }}
                                         placeholder="Ej. Cambio de tuberías, Instalación de grifos... (O dicta tu lista de precios)"
                                         rows={4}
-                                        className="w-full bg-white/50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-6 py-5 outline-none font-bold text-navy transition-all shadow-sm resize-none"
+                                        className="w-full bg-white/50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-6 py-5 outline-none font-bold text-navy transition-all shadow-sm resize-none overflow-hidden"
                                     />
                                 </div>
 
