@@ -109,25 +109,7 @@ export default function Home() {
             </button>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mt-12 group"
-          >
-            <a
-              href="/encuesta"
-              className="inline-flex items-center gap-3 bg-navy/5 hover:bg-primary/10 border border-navy/10 hover:border-primary/30 px-6 py-3 rounded-2xl transition-all duration-300"
-            >
-              <div className="bg-primary/20 p-2 rounded-lg text-primary group-hover:scale-110 transition-transform">
-                <BarChart3 className="w-5 h-5" />
-              </div>
-              <div className="text-left">
-                <p className="text-[10px] font-black uppercase tracking-widest text-navy/40 mb-0.5">Diagnóstico Gratuito</p>
-                <p className="text-sm font-bold text-navy group-hover:text-primary transition-colors italic">Realizar Test de Ventas Digitales <ChevronRight className="inline w-4 h-4 ml-1" /></p>
-              </div>
-            </a>
-          </motion.div>
+
 
           {/* Social Proof Text */}
           <p className="mt-8 text-sm text-navy/60 font-black uppercase tracking-widest bg-white/30 inline-block px-4 py-1 rounded-full backdrop-blur-sm">

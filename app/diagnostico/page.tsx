@@ -11,6 +11,7 @@ import {
     Users,
     Wallet,
     ArrowRight,
+    ArrowLeft,
     Utensils,
     Building2,
     Star
@@ -162,12 +163,34 @@ export default function QuizPage() {
         }, 2000);
     };
 
+    const handleGoBack = () => {
+        const questionKeys = Object.keys(QUESTIONS);
+        const currentIndex = questionKeys.indexOf(currentStep);
+
+        if (currentIndex > 0) {
+            const prevStep = questionKeys[currentIndex - 1];
+            setCurrentStep(prevStep);
+            // Opcional: Eliminar la respuesta actual al retroceder
+            const newAnswers = { ...answers };
+            delete newAnswers[prevStep];
+            setAnswers(newAnswers);
+        }
+    };
+
     const currentQuestion = QUESTIONS[currentStep as keyof typeof QUESTIONS];
 
     // --- RENDER DE RESULTADO ---
     if (result) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 relative">
+                {/* BOTÓN DE REINICIAR (En resultados tiene más sentido que Volver al Inicio o Reintentar) */}
+                <button
+                    onClick={() => window.location.reload()}
+                    className="absolute top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 rounded-full shadow-lg border border-navy/10 text-navy font-bold text-sm transition-all hover:scale-105 group"
+                >
+                    <RotateCcw size={16} className="group-hover:rotate-180 transition-transform duration-500" />
+                    <span className="hidden sm:inline">Reiniciar Test</span>
+                </button>
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -210,7 +233,29 @@ export default function QuizPage() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col md:flex-row font-sans">
+        <div className="min-h-screen flex flex-col md:flex-row font-sans relative">
+            {/* BOTÓN DE REGRESO A PREGUNTA ANTERIOR */}
+            {currentStep !== "P1" && currentStep !== "P_FINAL" && (
+                <button
+                    onClick={handleGoBack}
+                    className="absolute top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm hover:bg-white rounded-full shadow-lg border border-navy/10 text-navy font-bold text-sm transition-all hover:scale-105 group"
+                >
+                    <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                    <span className="hidden sm:inline">Anterior</span>
+                </button>
+            )}
+
+            {/* BOTÓN AL INICIO (Solo en P1) */}
+            {currentStep === "P1" && (
+                <Link
+                    href="/"
+                    className="absolute top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm hover:bg-white rounded-full shadow-lg border border-navy/10 text-navy font-bold text-sm transition-all hover:scale-105 group"
+                >
+                    <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                    <span className="hidden sm:inline">Volver</span>
+                </Link>
+            )}
+
             {/* IZQUIERDA: IMAGEN DINÁMICA */}
             <div className="flex-1 bg-navy relative overflow-hidden hidden md:flex flex-col justify-center items-center">
                 <AnimatePresence mode="wait">

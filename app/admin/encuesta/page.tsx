@@ -66,11 +66,37 @@ export default function AdminSurveyPage() {
 
             if (!response.ok) throw new Error(result.error || 'Failed to fetch');
             setResponses(result.data || []);
-        } catch (err: any) {
-            setError(err.message);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleExport = () => {
+        const headers = ["Fecha", "Nombre", "P1", "P2a", "P2b", "P3", "P4", "P5", "P6", "P7", "Score", "Color"];
+        const csvRows = responses.map(r => [
+            new Date(r.created_at).toLocaleDateString(),
+            r.nombre_local || "Sin nombre",
+            r.p1,
+            r.p2a || "",
+            r.p2b || "",
+            r.p3,
+            r.p4,
+            r.p5,
+            r.p6,
+            r.user_metadata?.p7_bonus || "",
+            r.total_score,
+            r.color_semaforo
+        ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+
+        const csvContent = [headers.join(","), ...csvRows].join("\n");
+        const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `diagnostico_visibilidad_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const stats = {
@@ -516,7 +542,11 @@ export default function AdminSurveyPage() {
                                         : "Se observa resistencia o falta de conciencia digital en la muestra actual."}"
                                 </p>
                             </div>
-                            <button className="w-full py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
+                            <button
+                                onClick={handleExport}
+                                className="w-full py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2"
+                            >
+                                <Copy className="w-4 h-4" />
                                 Exportar Datos para Facebook
                             </button>
                         </div>

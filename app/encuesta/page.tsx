@@ -11,8 +11,20 @@ import {
     Users,
     Wallet,
     ArrowRight,
+    ArrowLeft,
+    Smartphone,
+    Building2,
     UserPlus,
-    Building2
+    HeartPulse,
+    Search,
+    CreditCard,
+    MessageCircle,
+    Share2,
+    UserCircle,
+    HelpCircle,
+    MapPin,
+    MousePointer2,
+    Flame
 } from "lucide-react";
 import Link from "next/link";
 import { clsx, type ClassValue } from "clsx";
@@ -22,13 +34,15 @@ function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
-// Tipos de datos
-type QuestionId = "P1" | "P2A" | "P2B" | "P3" | "P4" | "P5" | "P6" | "LLENAR_NOMBRE" | "PANTALLA_FINAL";
+// --- TIPOS ---
+type QuestionId = "P1" | "P2A" | "P2B" | "P3" | "P4" | "P5" | "P6" | "P7" | "LLENAR_NOMBRE" | "PANTALLA_FINAL";
 
 interface Option {
     id: string;
     label: string;
     score: number;
+    trigger?: string;
+    icon?: React.ElementType;
 }
 
 interface Question {
@@ -38,82 +52,67 @@ interface Question {
     dynamicTitle?: (answers: Record<string, string>) => string;
     options: Option[];
     next: (answerId: string, answers: Record<string, string>) => QuestionId;
-    visualAnchor?: {
-        icon: React.ReactNode;
-        color: string;
-        bgGradient: string;
-    };
-    image?: string;
+    image: string;
+    icon: React.ElementType;
 }
 
+// --- VERSIÓN 2 UNIVERSAL ---
 const QUESTIONS: Record<string, Question> = {
     P1: {
         id: "P1",
-        title: "¿Cómo entrega su contacto a los clientes actualmente?",
-        image: "/images/entrega_contacto.webp",
-        visualAnchor: {
-            icon: <Users className="w-16 h-16 md:w-20 md:h-20" />,
-            color: "text-primary",
-            bgGradient: "from-primary/20 to-transparent"
-        },
+        title: "Cuando conoces a alguien que podría necesitar de tus trabajos, ¿cómo le das tu contacto?",
+        description: "El momento de la verdad: ¿Serás memorable o invisible?",
+        image: "/images/clientes_guardan.webp",
+        icon: Users,
         options: [
-            { id: "A", label: "Tarjetas físicas", score: 2 },
-            { id: "B", label: "Les dicto mi número", score: 2 },
-            { id: "C", label: "Les mando por WhatsApp", score: 1 },
-            { id: "D", label: "Me buscan en redes sociales", score: 1 },
-            { id: "E", label: "No entrego contacto, ellos me buscan", score: 0 },
+            { id: "A", label: "Le doy mi tarjeta de presentación", score: 2, icon: CreditCard },
+            { id: "B", label: "Le dicto mi número mientras anota", score: 4, icon: MousePointer2 },
+            { id: "C", label: "Le envío mi contacto por WhatsApp", score: 1, icon: MessageCircle },
+            { id: "D", label: "Le digo que me busque en redes sociales", score: 3, icon: Share2 },
+            { id: "E", label: "Si realmente me necesita, me buscará", score: 5, icon: Search },
         ],
-        next: (id) => (["A", "B", "C"].includes(id) ? "P2A" : "P2B"),
+        next: (id) => (["A", "B", "C", "D"].includes(id) ? "P2A" : "P2B"),
     },
     P2A: {
         id: "P2A",
-        title: "Cuando alguien le pide información adicional (email, redes, dirección), ¿qué hace?",
+        title: "Cuando alguien te pide más datos (email, dirección, redes), ¿qué haces?",
+        description: "Tu profesionalismo se nota en los detalles.",
         image: "/images/información_adicional.webp",
-        visualAnchor: {
-            icon: <CheckCircle2 className="w-16 h-16 md:w-20 md:h-20" />,
-            color: "text-royal",
-            bgGradient: "from-royal/20 to-transparent"
-        },
+        icon: CheckCircle2,
         options: [
-            { id: "A", label: "Se la doy completa", score: 2 },
-            { id: "B", label: "Solo doy el teléfono", score: 1 },
-            { id: "C", label: "Les digo que me busquen en redes", score: 1 },
-            { id: "D", label: "No me suelen pedir más datos", score: 0 },
+            { id: "A", label: "Le envío toda mi información completa", score: 0, icon: CheckCircle2 },
+            { id: "B", label: "Solo le doy mi número, lo demás después", score: 3, icon: Smartphone },
+            { id: "C", label: "Le digo 'búscame en Instagram/Facebook'", score: 3, icon: Share2 },
+            { id: "D", label: "Casi nunca me piden más información", score: 5, icon: HelpCircle },
         ],
         next: () => "P3",
     },
     P2B: {
         id: "P2B",
-        title: "¿Le ha pasado que busca a un proveedor o cliente en su teléfono y no lo encuentra porque no recuerda cómo lo guardó?",
-        image: "/images/ventas_perdidas.webp",
-        visualAnchor: {
-            icon: <AlertCircle className="w-16 h-16 md:w-20 md:h-20" />,
-            color: "text-red-500",
-            bgGradient: "from-red-500/20 to-transparent"
-        },
+        title: "¿Te ha pasado que buscas a alguien y NO lo encuentras?",
+        description: "Si a TI te pasa... imagina cuando te buscan a ti.",
+        image: "/images/información_adicional.webp",
+        icon: Search,
         options: [
-            { id: "A", label: "Sí, me pasa todo el tiempo", score: 2 },
-            { id: "B", label: "A veces sí me ha pasado", score: 2 },
-            { id: "C", label: "Casi nunca me pasa", score: 1 },
-            { id: "D", label: "No, siempre los encuentro", score: 0 },
+            { id: "A", label: "Sí, constantemente me frustra", score: 5, icon: AlertCircle },
+            { id: "B", label: "Sí, de vez en cuando me pasa", score: 3, icon: Search },
+            { id: "C", label: "Muy rara vez", score: 1, icon: CheckCircle2 },
+            { id: "D", label: "No, siempre encuentro todo rápido", score: 0, icon: Target },
         ],
         next: () => "P3",
     },
     P3: {
         id: "P3",
-        title: "¿Cómo cree que sus clientes guardan su contacto en el teléfono?",
-        image: "/images/clientes_guardan.webp",
-        visualAnchor: {
-            icon: <Target className="w-16 h-16 md:w-20 md:h-20" />,
-            color: "text-primary",
-            bgGradient: "from-primary/20 to-transparent"
-        },
+        title: "¿Cómo crees que la gente te guarda en su teléfono?",
+        description: "Tu identidad digital es cómo te recuerdan los demás.",
+        image: "/images/como_te-registran.webp",
+        icon: Smartphone,
         options: [
-            { id: "A", label: "Con mi nombre completo", score: 1 },
-            { id: "B", label: "Con el nombre del negocio", score: 2 },
-            { id: "C", label: "Con producto/servicio que vendo (ej: 'el de las parrilladas')", score: 3 },
-            { id: "D", label: "Con alguna característica (ej: 'restaurante del centro')", score: 3 },
-            { id: "E", label: "No tengo idea", score: 1 },
+            { id: "A", label: "Con mi nombre y apellido", score: 1, trigger: "nombre", icon: UserCircle },
+            { id: "B", label: "Con mi nombre + oficio (ej: Juan Carpintero)", score: 2, trigger: "nombre", icon: Building2 },
+            { id: "C", label: "Como 'el carpintero', 'la abogada', etc.", score: 4, trigger: "oficio", icon: MousePointer2 },
+            { id: "D", label: "Como 'el del centro' o alguna referencia", score: 3, trigger: "referencia", icon: MapPin },
+            { id: "E", label: "Sinceramente, no tengo idea", score: 5, trigger: "no_idea", icon: HelpCircle },
         ],
         next: () => "P4",
     },
@@ -121,117 +120,157 @@ const QUESTIONS: Record<string, Question> = {
         id: "P4",
         title: "", // Dinámico
         dynamicTitle: (answers) => {
-            const p3 = answers.P3_resp;
-            if (p3 === "producto_servicio") {
-                return "Supongamos que un cliente lo tiene guardado como 'el de las parrilladas'. Busca en su teléfono 'parrilladas' y salen 10 contactos sin foto. ¿Cree que es posible que haya llamado a otro porque no supo cuál era usted?";
+            const p3Choice = answers.P3_trigger;
+            if (p3Choice === "oficio") {
+                return "¿Y si al buscar tu oficio salen 10 contactos sin foto? ¿Llamaran al primero o a TI?";
             }
-            if (p3 === "caracteristica") {
-                return "Supongamos que lo tiene guardado como 'restaurante del centro'. Busca 'restaurante' y salen 15 contactos. ¿Cree que es posible que haya llamado a otro porque usted no aparecía primero?";
+            if (p3Choice === "referencia") {
+                return "Cuando buscan por referencia hay 20 resultados. Sin foto, ¿crees de verdad que te eligen a ti?";
             }
-            if (p3 === "nombre_negocio") {
-                return "Supongamos que un cliente no recuerda el nombre exacto de su negocio. Busca palabras relacionadas y no lo encuentra. ¿Cree que es posible que haya perdido esa venta?";
+            if (p3Choice === "no_idea") {
+                return "Si no sabes cómo te guardan, ¿cómo puedes estar seguro de que te encuentran?";
             }
-            if (p3 === "nombre_completo") {
-                return "Supongamos que un cliente no recuerda su nombre exacto. ¿Cree que es posible que no lo haya encontrado y haya comprado a otro?";
-            }
-            return "¿Cree que es posible que un cliente haya querido contactarlo, no lo encontró en su teléfono, y terminó comprándole a otro?";
+            return "¿Y si olvidan tu nombre? ¿Te buscan 5 veces o llamaran a otro que SÍ tiene foto?";
         },
-        image: "/images/ventas_perdidas.webp",
-        visualAnchor: {
-            icon: <AlertCircle className="w-16 h-16 md:w-20 md:h-20" />,
-            color: "text-orange-500",
-            bgGradient: "from-orange-500/20 to-transparent"
-        },
+        description: "En la guerra de la atención, el que no destaca, desaparece.",
+        image: "/images/clientes_guardan.webp",
+        icon: AlertCircle,
         options: [
-            { id: "A", label: "Sí, probablemente me ha pasado", score: 2 },
-            { id: "B", label: "No creo, mis clientes siempre me encuentran", score: 0 },
-            { id: "C", label: "No lo había pensado, pero puede ser", score: 1 },
-            { id: "D", label: "Seguro, me ha pasado varias veces", score: 3 },
+            { id: "A", label: "Definitivamente me ha pasado", score: 5, icon: AlertCircle },
+            { id: "B", label: "Probablemente sí, nunca lo pensé", score: 3, icon: HelpCircle },
+            { id: "C", label: "Tiene mucho sentido ahora", score: 3, icon: Target },
+            { id: "D", label: "No creo, siempre me encuentran", score: 0, icon: CheckCircle2 },
         ],
         next: () => "P5",
     },
     P5: {
         id: "P5",
-        title: "En promedio, ¿cuántos clientes nuevos necesita al mes para que su negocio crezca?",
+        title: "¿Cuántas nuevas oportunidades necesitas AL MES para crecer financieramente?",
+        description: "Cada oportunidad perdida es un paso atrás.",
         image: "/images/clientes_nuevos.webp",
-        visualAnchor: {
-            icon: <UserPlus className="w-16 h-16 md:w-20 md:h-20" />,
-            color: "text-accent",
-            bgGradient: "from-accent/20 to-transparent"
-        },
+        icon: UserPlus,
         options: [
-            { id: "A", label: "1-5", score: 1 },
-            { id: "B", label: "5-10", score: 2 },
-            { id: "C", label: "10-20", score: 3 },
-            { id: "D", label: "Más de 20", score: 3 },
-            { id: "E", label: "No necesito más clientes", score: 0 },
+            { id: "A", label: "1-3 nuevas oportunidades", score: 2, icon: UserPlus },
+            { id: "B", label: "3-7 nuevas oportunidades", score: 3, icon: UserPlus },
+            { id: "C", label: "7-15 nuevas oportunidades", score: 4, icon: UserPlus },
+            { id: "D", label: "Más de 15 nuevas oportunidades", score: 5, icon: Flame },
+            { id: "E", label: "No necesito más clientes", score: -8, icon: Target },
         ],
         next: () => "P6",
     },
     P6: {
         id: "P6",
-        title: "Si existiera una forma de asegurarse que CADA cliente que lo guarde lo tenga con su foto, negocio, y palabras clave para encontrarlo fácil, ¿cuánto invertiría?",
+        title: "¿Cuánto invertirías por GARANTIZAR que todos te guarden con tu foto y nombre?",
+        description: "Ponle precio a nunca más perder una oportunidad.",
         image: "/images/hombre_inteligente.webp",
-        visualAnchor: {
-            icon: <Wallet className="w-16 h-16 md:w-20 md:h-20" />,
-            color: "text-royal",
-            bgGradient: "from-royal/20 to-transparent"
-        },
+        icon: Wallet,
         options: [
-            { id: "A", label: "$5 o menos", score: 1 },
-            { id: "B", label: "$10-15", score: 3 },
-            { id: "C", label: "$20-30", score: 4 },
-            { id: "D", label: "$50 o más", score: 4 },
-            { id: "E", label: "No invertiría nada", score: 0 },
+            { id: "A", label: "$5 o menos", score: 1, icon: Wallet },
+            { id: "B", label: "$10-$20", score: 2, icon: Wallet },
+            { id: "C", label: "$25-$40", score: 4, icon: Wallet },
+            { id: "D", label: "$50 o más si funciona", score: 5, icon: Flame },
+            { id: "E", label: "Nada, prefiero seguir como estoy", score: -10, icon: AlertCircle },
+        ],
+        next: () => "P7",
+    },
+    P7: {
+        id: "P7",
+        title: "¿Alguna vez supiste que alguien necesitaba lo que tú haces, pero NO te llamó?",
+        description: "Ese momento en que te enteras que contrataron a otro.",
+        image: "/images/hombre_pensativo.webp",
+        icon: HeartPulse,
+        options: [
+            { id: "A", label: "Sí, y me molesta cada vez", score: 5, icon: AlertCircle },
+            { id: "B", label: "Sí, me ha pasado un par de veces", score: 3, icon: HeartPulse },
+            { id: "C", label: "Creo que sí, no estoy seguro", score: 2, icon: HelpCircle },
+            { id: "D", label: "No, siempre me contactan", score: 0, icon: CheckCircle2 },
         ],
         next: () => "LLENAR_NOMBRE",
     },
     LLENAR_NOMBRE: {
         id: "LLENAR_NOMBRE",
-        title: "¡Análisis casi listo!",
+        title: "¡Tu diagnóstico está listo!",
+        description: "Ingresa tu nombre para personalizar los resultados.",
         image: "/images/logo.png",
-        visualAnchor: {
-            icon: <Building2 className="w-16 h-16 md:w-20 md:h-20" />, // Mantener icono pero la imagen es la que se cambiará
-            color: "text-primary",
-            bgGradient: "from-primary/20 to-transparent"
-        },
+        icon: Building2,
         options: [],
         next: () => "PANTALLA_FINAL",
     }
 };
 
-const respMapping: Record<string, string> = {
-    P1_A: "tarjetas",
-    P1_B: "dictar",
-    P1_C: "whatsapp",
-    P1_D: "redes",
-    P1_E: "no_entrego",
-    P3_A: "nombre_completo",
-    P3_B: "nombre_negocio",
-    P3_C: "producto_servicio",
-    P3_D: "caracteristica",
-    P3_E: "no_idea",
-};
-
 export default function SurveyPage() {
     const [currentStep, setCurrentStep] = useState<QuestionId>("P1");
+    const [stepHistory, setStepHistory] = useState<QuestionId[]>([]);
     const [answers, setAnswers] = useState<Record<string, string>>({});
     const [totalScore, setTotalScore] = useState(0);
-    const [isFinishing, setIsFinishing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [respondentName, setRespondentName] = useState("");
 
     const getTrafficLight = (score: number) => {
-        if (score <= 6) return { color: "rojo", label: "Bajo Impacto", message: "Gracias por su tiempo. Si en el futuro le interesa, aquí está mi contacto." };
-        if (score <= 12) return { color: "amarillo", label: "Potencial", message: "Basado en sus respuestas, creo que esto podría servirle. ¿Le muestro 30 segundos cómo funciona?" };
-        return { color: "verde", label: "Crecimiento Crítico", message: "Perfecto, justo esto resuelve lo que me acaba de mencionar. Déjeme mostrarle..." };
+        if (score <= 9) return {
+            color: "rojo",
+            label: "Perfil: Sistema Estable",
+            status: "Tu visibilidad es funcional",
+            message: "Parece que tienes un sistema que te funciona. Pero si quieres optimizar cada contacto, aquí estaremos.",
+            cta: "Guardar para Después"
+        };
+        if (score <= 17) return {
+            color: "amarillo",
+            label: "Zona de Riesgo: Mejora Necesaria",
+            status: "Estás dejando oportunidades sobre la mesa",
+            message: "Tienes una base, pero hay FUGAS. ¿Te muestro cómo convertir esas oportunidades 'tal vez' en SEGURAS?",
+            cta: "Sí, Quiero Mejorar Esto"
+        };
+        return {
+            color: "verde",
+            label: "Alerta Crítica: Invisibilidad Activa",
+            status: "Estás perdiendo oportunidades AHORA",
+            message: "Tu perfil está en ALTO RIESGO. Las personas NO te encuentran fácilmente. ¿Solucionamos esto en 30 segundos?",
+            cta: "Mostrarme la Solución"
+        };
     };
 
-    const saveResults = async (finalScore: number, name: string) => {
+    const handleOptionSelect = (option: Option) => {
+        const nextStep = QUESTIONS[currentStep].next(option.id, answers);
+        const newScore = totalScore + option.score;
+
+        const newAnswers = { ...answers, [currentStep]: option.id };
+        if (option.trigger) {
+            newAnswers[`${currentStep}_trigger`] = option.trigger;
+        }
+
+        setAnswers(newAnswers);
+        setTotalScore(newScore);
+        setStepHistory(prev => [...prev, currentStep]);
+        setCurrentStep(nextStep);
+    };
+
+    const handleGoBack = () => {
+        if (stepHistory.length > 0) {
+            const prevHistory = [...stepHistory];
+            const prevStep = prevHistory.pop()!;
+
+            const prevOptionId = answers[prevStep];
+            const prevOption = QUESTIONS[prevStep].options.find(o => o.id === prevOptionId);
+            if (prevOption) {
+                setTotalScore(prev => prev - prevOption.score);
+            }
+
+            const newAnswers = { ...answers };
+            delete newAnswers[prevStep];
+            delete newAnswers[`${prevStep}_trigger`];
+
+            setAnswers(newAnswers);
+            setStepHistory(prevHistory);
+            setCurrentStep(prevStep);
+        }
+    };
+
+    const saveResults = async () => {
         setIsSaving(true);
         try {
-            const traffic = getTrafficLight(finalScore);
-            const response = await fetch('/api/survey/submit', {
+            const traffic = getTrafficLight(totalScore);
+            await fetch('/api/survey/submit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -242,53 +281,30 @@ export default function SurveyPage() {
                     p4: answers.P4,
                     p5: answers.P5,
                     p6: answers.P6,
-                    total_score: finalScore,
+                    total_score: totalScore,
                     color_semaforo: traffic.color,
-                    p3_resp_custom: answers.P3_resp || null,
-                    nombre_local: name,
+                    nombre_local: respondentName,
                     user_metadata: {
-                        timestamp: new Date().toISOString(),
-                        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown'
+                        p7_bonus: answers.P7 || null,
+                        timestamp: new Date().toISOString()
                     }
                 })
             });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error || 'Failed to save');
-            console.log('Survey saved successfully:', result);
-        } catch (error: any) {
+        } catch (error) {
             console.error('Failed to save survey:', error);
-            alert(`Error al guardar: ${error.message}`);
         } finally {
             setIsSaving(false);
         }
     };
 
-    const handleOptionSelect = async (option: Option) => {
-        const nextStep = QUESTIONS[currentStep].next(option.id, answers);
-        const newScore = totalScore + option.score;
-
-        // Guardar respuesta para lógica dinámica
-        const newAnswers = { ...answers, [`${currentStep}`]: option.id };
-        if (respMapping[`${currentStep}_${option.id}`]) {
-            newAnswers[`${currentStep}_resp`] = respMapping[`${currentStep}_${option.id}`];
-        }
-
-        setAnswers(newAnswers);
-        setTotalScore(newScore);
-        setCurrentStep(nextStep);
-    };
-
     const finalizeSurvey = async () => {
-        setIsFinishing(true);
-        await saveResults(totalScore, respondentName);
-        setTimeout(() => {
-            setCurrentStep("PANTALLA_FINAL");
-            setIsFinishing(false);
-        }, 800);
+        await saveResults();
+        setCurrentStep("PANTALLA_FINAL");
     };
 
     const resetSurvey = () => {
         setCurrentStep("P1");
+        setStepHistory([]);
         setAnswers({});
         setTotalScore(0);
         setRespondentName("");
@@ -297,220 +313,254 @@ export default function SurveyPage() {
     const trafficLight = getTrafficLight(totalScore);
     const question = QUESTIONS[currentStep] || QUESTIONS.P1;
 
+    if (currentStep === "PANTALLA_FINAL") {
+        return (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative font-sans">
+                <button
+                    onClick={resetSurvey}
+                    className="absolute top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 rounded-full shadow-lg border border-navy/10 text-navy font-bold text-sm transition-all hover:scale-105 group"
+                >
+                    <RotateCcw size={16} className="group-hover:rotate-180 transition-transform duration-500" />
+                    <span>Reiniciar</span>
+                </button>
+
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="max-w-4xl w-full bg-white rounded-[40px] shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px]"
+                >
+                    <div className="flex-1 p-8 md:p-12 flex flex-col justify-center items-start text-left">
+                        <span className="text-xs font-bold uppercase tracking-widest text-navy/40 mb-4">Resultado Personalizado</span>
+                        <h2 className="text-4xl md:text-5xl font-black text-navy mb-4 leading-tight">
+                            <span className={cn(
+                                trafficLight.color === 'verde' ? "text-red-600" :
+                                    trafficLight.color === 'amarillo' ? "text-primary" :
+                                        "text-emerald-600"
+                            )}>{trafficLight.label}</span>
+                        </h2>
+
+                        <p className="text-xl font-black text-navy/80 mb-6 italic">{trafficLight.status}</p>
+
+                        <div className="bg-slate-50 p-6 rounded-2xl border border-navy/5 mb-8 w-full">
+                            <p className="text-lg text-navy/70 leading-relaxed font-medium">
+                                <span className="text-navy font-black">{respondentName}</span>, {trafficLight.message}
+                            </p>
+                        </div>
+
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="text-sm font-bold text-navy/40 uppercase tracking-widest">Nivel de Visibilidad:</div>
+                            <div className="text-2xl font-black text-navy">{totalScore}/35</div>
+                        </div>
+
+                        <Link href="/" className={cn(
+                            "group flex items-center gap-3 px-8 py-5 rounded-full font-black text-xl hover:scale-105 transition-all shadow-2xl w-full md:w-auto justify-center",
+                            trafficLight.color === 'verde' ? "bg-red-600 text-white shadow-red-500/30" :
+                                trafficLight.color === 'amarillo' ? "bg-primary text-white shadow-primary/30" :
+                                    "bg-emerald-600 text-white shadow-emerald-500/30"
+                        )}>
+                            <span>{trafficLight.cta}</span>
+                            <ArrowRight className="group-hover:translate-x-1 transition-transform" />
+                        </Link>
+                    </div>
+
+                    <div className={cn(
+                        "w-full md:w-1/3 p-12 flex flex-col justify-center items-center text-white relative overflow-hidden",
+                        trafficLight.color === 'verde' ? "bg-red-600" :
+                            trafficLight.color === 'amarillo' ? "bg-primary" :
+                                "bg-emerald-600"
+                    )}>
+                        <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] animate-pulse"></div>
+                        <div className="relative z-10 bg-white/20 p-8 rounded-full backdrop-blur-md mb-6 shadow-2xl">
+                            {trafficLight.color === 'verde' && <AlertCircle size={60} strokeWidth={3} />}
+                            {trafficLight.color === 'amarillo' && <Target size={60} strokeWidth={3} />}
+                            {trafficLight.color === 'rojo' && <CheckCircle2 size={60} strokeWidth={3} />}
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
+        );
+    }
+
     return (
-        <div className="min-h-screen bg-cream selection:bg-primary/30 flex items-center justify-center p-4">
-            {/* Background elements */}
-            <div className="fixed inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-royal/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="min-h-screen flex flex-col md:flex-row font-sans relative bg-white overflow-hidden">
+            {/* BOTONES NAVEGACIÓN */}
+            <div className="absolute top-6 left-6 z-50 flex gap-2">
+                {currentStep !== "P1" && (
+                    <button
+                        onClick={handleGoBack}
+                        className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-md hover:bg-white rounded-full shadow-lg border border-navy/5 text-navy font-bold text-sm transition-all hover:scale-105 group"
+                    >
+                        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                        <span>Anterior</span>
+                    </button>
+                )}
+                {currentStep === "P1" && (
+                    <Link
+                        href="/"
+                        className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-md hover:bg-white rounded-full shadow-lg border border-navy/5 text-navy font-bold text-sm transition-all hover:scale-105 group"
+                    >
+                        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                        <span>Volver</span>
+                    </Link>
+                )}
             </div>
 
-            <main className="relative z-10 w-full max-w-6xl">
+            {/* IZQUIERDA: CONTENIDO VISUAL */}
+            <div className="flex-1 bg-navy relative overflow-hidden hidden md:flex flex-col justify-center px-12 lg:px-20">
                 <AnimatePresence mode="wait">
-                    {currentStep !== "PANTALLA_FINAL" ? (
+                    <motion.div
+                        key={currentStep}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 1 }}
+                        className="absolute inset-0"
+                    >
+                        <motion.img
+                            src={question.image}
+                            initial={{ scale: 1.2, filter: "brightness(0.6)" }}
+                            animate={{ scale: 1, filter: "brightness(0.7)" }}
+                            className="w-full h-full object-cover"
+                            alt=""
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-br from-navy/10 via-transparent to-navy/30"></div>
+                    </motion.div>
+                </AnimatePresence>
+
+                <div className="relative z-10 w-full">
+                    <motion.div
+                        key={currentStep}
+                        initial={{ opacity: 0, x: -30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3, duration: 0.6 }}
+                        className="space-y-8"
+                    >
+                        <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-xl px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest text-primary border border-white/20">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                            </span>
+                            Test de Visibilidad
+                        </div>
+
+                        <h1 className="text-4xl lg:text-6xl font-black text-white leading-[1.1] tracking-tight drop-shadow-2xl">
+                            {question.dynamicTitle ? question.dynamicTitle(answers) : question.title}
+                        </h1>
+
+                        <div className="flex items-start gap-4 p-6 bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 max-w-lg">
+                            <div className="bg-primary/20 p-2 rounded-xl text-primary mt-1">
+                                <Smartphone size={20} />
+                            </div>
+                            <p className="text-xl text-white/80 font-medium leading-relaxed italic">
+                                &quot;{question.description}&quot;
+                            </p>
+                        </div>
+                    </motion.div>
+                </div>
+            </div>
+
+            {/* DERECHA: SELECCIÓN */}
+            <div className="flex-1 bg-white p-8 md:p-12 lg:p-20 flex flex-col justify-center relative min-h-screen">
+                <div className="max-w-md mx-auto w-full">
+                    {/* Progress Indicator */}
+                    <div className="flex items-center gap-3 mb-12">
+                        <div className="flex flex-1 gap-1.5 h-1.5">
+                            {["P1", "P2", "P3", "P4", "P5", "P6", "P7", "LL"].map((qId, idx) => {
+                                const stepsArr = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "LL"];
+                                const currentVisualId = currentStep.startsWith("P2") ? "P2" :
+                                    currentStep === "LLENAR_NOMBRE" ? "LL" : currentStep;
+                                const activeIdx = stepsArr.indexOf(currentVisualId);
+                                const isDone = activeIdx > idx;
+                                const isActive = activeIdx === idx;
+                                return (
+                                    <div key={idx} className={cn(
+                                        "flex-1 rounded-full transition-all duration-700",
+                                        isDone ? "bg-navy/10" : isActive ? "bg-primary scale-x-110" : "bg-slate-100"
+                                    )} />
+                                );
+                            })}
+                        </div>
+                        <span className="text-[10px] font-black text-navy/40 uppercase tracking-tighter w-8 text-right">
+                            {Math.round(((stepHistory.length + 1) / 8) * 100)}%
+                        </span>
+                    </div>
+
+                    <AnimatePresence mode="wait">
                         <motion.div
                             key={currentStep}
-                            initial={{ opacity: 0, scale: 0.95, y: 30 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 1.05, y: -30 }}
-                            transition={{ duration: 0.5, ease: "circOut" }}
-                            className="glass-card rounded-[40px] shadow-2xl overflow-hidden min-h-[600px] flex flex-col lg:flex-row"
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -15 }}
+                            transition={{ duration: 0.4 }}
                         >
-                            {/* Left Side: Visual Image */}
-                            <div className="w-full lg:w-1/2 relative bg-navy/5 flex items-center justify-center p-8 lg:p-0">
-                                <motion.div
-                                    key={`img-${currentStep}`}
-                                    initial={{ opacity: 0, x: -50 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: 0.2, duration: 0.6 }}
-                                    className="w-full h-full flex items-center justify-center relative"
-                                >
-                                    <div className={cn(
-                                        "absolute inset-0 blur-3xl opacity-20 animate-pulse",
-                                        question.visualAnchor?.bgGradient.split(' ')[0] || "bg-primary"
-                                    )} />
-
-                                    {question.image ? (
-                                        <img
-                                            src={question.image}
-                                            alt="Visual context"
-                                            className="w-full h-full object-cover lg:max-h-[700px] shadow-2xl relative z-10"
-                                        />
-                                    ) : (
-                                        <div className={cn(
-                                            "relative z-10 p-12 rounded-full shadow-2xl bg-white/40 border border-white/60",
-                                            question.visualAnchor?.color
-                                        )}>
-                                            {question.visualAnchor?.icon}
-                                        </div>
-                                    )}
-                                </motion.div>
-                            </div>
-
-                            {/* Right Side: Questions & Options */}
-                            <div className="w-full lg:w-1/2 p-8 md:p-12 lg:p-12 flex flex-col justify-center bg-white/30 backdrop-blur-md relative">
-                                <div className="space-y-6 max-w-lg mx-auto w-full">
-                                    {/* Progress */}
-                                    <div className="flex gap-2 mb-4">
-                                        {Object.keys(QUESTIONS).filter(k => k !== "PANTALLA_FINAL").map((qId, idx) => (
-                                            <div
-                                                key={qId}
-                                                className={cn(
-                                                    "h-1.5 flex-1 rounded-full transition-all duration-700",
-                                                    Object.keys(answers).includes(qId) || currentStep === qId ? "bg-primary" : "bg-navy/5"
-                                                )}
-                                            />
-                                        ))}
-                                    </div>
-
-                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary font-bold text-[10px] uppercase tracking-widest">
-                                        Fase {Object.keys(answers).length + 1}
-                                    </div>
-
-                                    <h1 className="text-2xl md:text-3xl font-extrabold text-navy leading-tight">
-                                        {question.dynamicTitle ? question.dynamicTitle(answers) : question.title}
-                                    </h1>
-
-                                    <div className="grid gap-3 pt-2">
-                                        {currentStep === "LLENAR_NOMBRE" ? (
-                                            <div className="space-y-4">
-                                                <p className="text-navy/60 font-medium text-sm">Ingrese el nombre del local o persona encuestada para guardar el análisis:</p>
-                                                <div className="relative group">
-                                                    <input
-                                                        type="text"
-                                                        value={respondentName}
-                                                        onChange={(e) => setRespondentName(e.target.value)}
-                                                        placeholder="Nombre del local / Persona"
-                                                        className="w-full p-5 rounded-2xl bg-white border-2 border-primary/20 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all text-lg font-semibold text-navy shadow-inner"
-                                                    />
-                                                </div>
-                                                <button
-                                                    disabled={!respondentName || isSaving || isFinishing}
-                                                    onClick={finalizeSurvey}
-                                                    className="w-full bg-navy text-white p-5 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 hover:bg-navy/90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-navy/20 disabled:opacity-50"
-                                                >
-                                                    {isSaving ? "Guardando..." : "Ver Diagnóstico"}
-                                                    <ChevronRight className="w-5 h-5" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            question.options.map((option) => (
-                                                <motion.button
-                                                    key={option.id}
-                                                    whileHover={{ scale: 1.01, x: 5 }}
-                                                    whileTap={{ scale: 0.99 }}
-                                                    onClick={() => handleOptionSelect(option)}
-                                                    className="group flex items-center justify-between p-5 rounded-2xl bg-white border border-navy/5 hover:border-primary/40 hover:bg-primary/5 transition-all text-left shadow-sm hover:shadow-md"
-                                                >
-                                                    <span className="text-navy/80 group-hover:text-navy font-bold text-base md:text-lg">
-                                                        {option.label}
-                                                    </span>
-                                                    <div className="w-8 h-8 rounded-full bg-navy/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                                                        <ChevronRight className="w-5 h-5 text-navy/40 group-hover:text-primary transition-colors" />
-                                                    </div>
-                                                </motion.button>
-                                            ))
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="glass-card rounded-[50px] p-6 md:p-12 text-center shadow-2xl overflow-hidden relative max-w-2xl mx-auto"
-                        >
-                            <div className={cn(
-                                "absolute inset-0 bg-gradient-to-b opacity-10 pointer-events-none",
-                                trafficLight.color === 'verde' ? "from-accent/60 to-transparent" :
-                                    trafficLight.color === 'amarillo' ? "from-primary/60 to-transparent" :
-                                        "from-red-500/60 to-transparent"
-                            )} />
-
-                            <div className="relative z-10 space-y-6">
-                                <div className="space-y-2">
-                                    <h2 className="text-navy/40 font-bold tracking-[0.2em] uppercase text-[10px]">Análisis Completado</h2>
-                                    <h1 className="text-3xl md:text-5xl font-black text-navy leading-tight">
-                                        Diagnóstico para <br />
-                                        <span className="text-primary truncate block px-4">{respondentName}</span>
-                                    </h1>
-                                </div>
-
-                                {/* Traffic Light Visual - Compacted */}
-                                <div className="relative h-40 md:h-48 flex justify-center items-center">
-                                    <motion.div
-                                        initial={{ scale: 0.5, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                                        className="relative"
-                                    >
-                                        <div className={cn(
-                                            "absolute inset-0 rounded-full blur-[60px] animate-pulse opacity-40",
-                                            trafficLight.color === 'verde' ? "bg-accent" :
-                                                trafficLight.color === 'amarillo' ? "bg-primary" :
-                                                    "bg-red-500"
-                                        )} />
-
-                                        <div className={cn(
-                                            "w-36 h-36 md:w-44 md:h-44 rounded-full border-[8px] border-white/80 shadow-2xl flex items-center justify-center transition-all duration-1000 bg-white relative z-10",
-                                            trafficLight.color === 'verde' ? "text-accent" :
-                                                trafficLight.color === 'amarillo' ? "text-primary text-glow" :
-                                                    "text-red-500"
-                                        )}>
-                                            {trafficLight.color === 'verde' && <CheckCircle2 className="w-16 h-16 md:w-20 md:h-20" />}
-                                            {trafficLight.color === 'amarillo' && <AlertCircle className="w-16 h-16 md:w-20 md:h-20" />}
-                                            {trafficLight.color === 'rojo' && <AlertCircle className="w-16 h-16 md:w-20 md:h-20" />}
-                                        </div>
-                                    </motion.div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <span className={cn(
-                                        "text-xl md:text-3xl font-black uppercase tracking-wider block",
-                                        trafficLight.color === 'verde' ? "text-accent" :
-                                            trafficLight.color === 'amarillo' ? "text-primary" :
-                                                "text-red-500"
-                                    )}>
-                                        {trafficLight.label}
-                                    </span>
-                                    <p className="text-navy/60 text-base font-bold">Puntuación: <span className="text-navy">{totalScore}/20</span></p>
-                                </div>
-
-                                <div className="bg-white/50 backdrop-blur-sm p-6 md:p-8 rounded-[28px] border border-navy/5 shadow-inner mx-auto max-w-lg">
-                                    <p className="text-xl md:text-2xl text-navy font-bold leading-tight italic">
-                                        "{trafficLight.message}"
+                            {currentStep === "LLENAR_NOMBRE" ? (
+                                <div className="space-y-8">
+                                    <h2 className="text-4xl font-black text-navy leading-tight">
+                                        {question.title}
+                                    </h2>
+                                    <p className="text-navy/50 font-bold mb-8 italic text-lg leading-relaxed">
+                                        {question.description}
                                     </p>
-                                </div>
-
-                                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-                                    <Link
-                                        href="/registro"
-                                        className="group bg-navy text-white px-8 py-5 rounded-[20px] font-black text-lg flex items-center gap-3 hover:bg-navy/90 hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-navy/30 w-full sm:w-auto justify-center"
-                                    >
-                                        Continuar
-                                        <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
-                                    </Link>
-
+                                    <div className="relative group">
+                                        <div className="absolute inset-y-0 left-6 flex items-center text-navy/20 group-focus-within:text-primary transition-colors">
+                                            <Building2 size={24} />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={respondentName}
+                                            onChange={(e) => setRespondentName(e.target.value)}
+                                            placeholder="Tu nombre o negocio..."
+                                            className="w-full pl-16 pr-6 py-6 bg-slate-50 border-2 border-transparent rounded-[2rem] text-xl font-bold outline-none focus:border-primary/20 focus:bg-white transition-all shadow-inner"
+                                            autoFocus
+                                        />
+                                    </div>
                                     <button
-                                        onClick={resetSurvey}
-                                        className="px-6 py-5 rounded-[20px] font-bold text-navy/40 hover:text-navy hover:bg-navy/5 transition-all flex items-center gap-2 w-full sm:w-auto justify-center"
+                                        disabled={!respondentName || isSaving}
+                                        onClick={finalizeSurvey}
+                                        className="w-full bg-navy text-white p-6 rounded-[2rem] font-black text-xl hover:bg-navy/90 hover:scale-[1.02] shadow-2xl transition-all disabled:opacity-30 disabled:scale-100 flex items-center justify-center gap-3"
                                     >
-                                        <RotateCcw className="w-4 h-4" />
-                                        Reiniciar
+                                        {isSaving ? "Calculando..." : "Ver Mi Diagnóstico"}
+                                        <ArrowRight size={24} />
                                     </button>
                                 </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </main>
+                            ) : (
+                                <div className="space-y-6">
+                                    <div className="flex items-center gap-3 mb-8">
+                                        <div className="h-0.5 w-6 bg-primary opacity-30"></div>
+                                        <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Elige una opción</p>
+                                    </div>
 
-            <footer className="fixed bottom-8 text-center w-full px-4 hidden md:block">
-                <p className="text-navy text-sm font-bold tracking-widest opacity-40">
-                    DISEÑADO POR <a href="https://www.cesarreyesjaramillo.com/" target="_blank" rel="noopener noreferrer" className="text-primary hover:opacity-100 transition-all font-black border-b-2 border-primary/20">CÉSAR REYES JARAMILLO</a>
-                </p>
-            </footer>
+                                    <div className="space-y-3.5">
+                                        {question.options.map((option) => (
+                                            <button
+                                                key={option.id}
+                                                onClick={() => handleOptionSelect(option)}
+                                                className="group w-full text-left p-6 rounded-[2rem] border-2 border-slate-50 bg-slate-50/30 hover:bg-white hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 transition-all flex items-center justify-between"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className="bg-white p-3 rounded-2xl shadow-sm group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                                                        {option.icon ? <option.icon size={22} /> : <Target size={22} />}
+                                                    </div>
+                                                    <span className="text-lg font-bold text-navy/80 tracking-tight group-hover:text-navy transition-colors leading-snug">
+                                                        {option.label}
+                                                    </span>
+                                                </div>
+                                                <div className="bg-navy/5 p-2 rounded-xl group-hover:bg-primary group-hover:text-white transition-all opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0">
+                                                    <ChevronRight size={20} />
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </motion.div>
+                    </AnimatePresence>
+                </div>
+            </div>
+
+            <p className="fixed bottom-6 right-10 text-[10px] font-black uppercase tracking-[0.4em] text-navy/20 hidden lg:block transform rotate-90 origin-right">
+                Diagnóstico Universal v2.0
+            </p>
         </div>
     );
 }
