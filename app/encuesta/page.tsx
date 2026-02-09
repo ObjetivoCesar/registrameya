@@ -465,23 +465,23 @@ export default function SurveyPage() {
                 <div className="absolute inset-0 md:hidden z-0">
                     <img
                         src={question.image}
-                        className="w-full h-full object-cover blur-2xl scale-110 opacity-40"
+                        className="w-full h-full object-cover blur-md scale-110 opacity-85"
                         alt=""
                     />
-                    <div className="absolute inset-0 bg-navy/60"></div>
+                    <div className="absolute inset-0 bg-navy/15"></div>
                 </div>
 
-                <div className="relative z-10 flex-1 bg-white md:bg-white p-6 md:p-12 lg:p-20 flex flex-col justify-start md:justify-center">
+                <div className="relative z-10 flex-1 bg-transparent md:bg-white p-6 md:p-12 lg:p-20 flex flex-col justify-start md:justify-center">
                     <div className="max-w-md mx-auto w-full pt-20 md:pt-0">
                         {/* Contenido Visual en Móvil (Título y Desc) */}
                         <div className="mb-8 md:hidden space-y-4">
-                            <div className="inline-flex items-center gap-2 bg-primary/10 backdrop-blur-md px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-primary border border-primary/20">
+                            <div className="inline-flex items-center gap-2 bg-primary/20 backdrop-blur-md px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-primary border border-primary/30">
                                 Test de Visibilidad
                             </div>
-                            <h1 className="text-3xl font-black text-navy leading-tight">
+                            <h1 className="text-3xl font-black text-white leading-tight">
                                 {question.dynamicTitle ? question.dynamicTitle(answers) : question.title}
                             </h1>
-                            <p className="text-lg text-navy/60 font-medium italic leading-relaxed">
+                            <p className="text-lg text-white/60 font-medium italic leading-relaxed">
                                 &quot;{question.description}&quot;
                             </p>
                         </div>
@@ -499,12 +499,12 @@ export default function SurveyPage() {
                                     return (
                                         <div key={idx} className={cn(
                                             "flex-1 rounded-full transition-all duration-700",
-                                            isDone ? "bg-navy/10" : isActive ? "bg-primary" : "bg-navy/5"
+                                            isDone ? "bg-white/20" : isActive ? "bg-primary" : "bg-white/10"
                                         )} />
                                     );
                                 })}
                             </div>
-                            <span className="text-[10px] font-black text-navy/30 uppercase tracking-tighter w-8 text-right">
+                            <span className="text-[10px] font-black text-white/40 uppercase tracking-tighter w-8 text-right">
                                 {Math.round(((stepHistory.length + 1) / 8) * 100)}%
                             </span>
                         </div>
@@ -519,10 +519,10 @@ export default function SurveyPage() {
                             >
                                 {currentStep === "LLENAR_NOMBRE" ? (
                                     <div className="space-y-8">
-                                        <h2 className="text-4xl font-black text-navy leading-tight">
+                                        <h2 className="text-4xl font-black text-white md:text-navy leading-tight">
                                             {question.title}
                                         </h2>
-                                        <p className="text-navy/50 font-bold mb-8 italic text-lg leading-relaxed">
+                                        <p className="text-white/60 md:text-navy/50 font-bold mb-8 italic text-lg leading-relaxed">
                                             {question.description}
                                         </p>
                                         <div className="relative group">
