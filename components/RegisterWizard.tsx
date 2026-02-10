@@ -34,9 +34,9 @@ const steps = [
     { id: 1, title: 'Básico', icon: User },
     { id: 2, title: 'Perfil', icon: Briefcase },
     { id: 3, title: 'Visual', icon: Camera },
-    { id: 4, title: 'Plan', icon: Zap },
-    { id: 5, title: 'Pago', icon: Smartphone },
-    { id: 6, title: 'Final', icon: CheckCircle },
+    // Plan selection removed - only one plan ($20)
+    { id: 4, title: 'Pago', icon: Smartphone },
+    { id: 5, title: 'Final', icon: CheckCircle },
 ];
 
 const INDUSTRY_TAGS: Record<string, string[]> = {
@@ -503,11 +503,11 @@ export default function RegisterWizard() {
         if (step === 2) {
             if (!formData.profession) return;
         }
-        if (step === 5) {
+        if (step === 4) { // Payment Step is now 4
             handleFinalSubmit();
             return;
         }
-        setStep(s => Math.min(s + 1, 6));
+        setStep(s => Math.min(s + 1, 5));
     };
 
     const handleBack = () => setStep(s => Math.max(s - 1, 1));
@@ -519,7 +519,7 @@ export default function RegisterWizard() {
 
     // PayPhone Button Initialization Effect (Box v1.1)
     useEffect(() => {
-        if (step === 5 && formData.paymentMethod === 'payphone') {
+        if (step === 4 && formData.paymentMethod === 'payphone') { // Payment is now Step 4
             const initButton = () => {
                 const PBox = (window as any).PPaymentButtonBox;
                 if (PBox) {
@@ -576,7 +576,7 @@ export default function RegisterWizard() {
         }
     }, [step, formData.paymentMethod, payphoneInitialized]);
 
-    const currentPlanPrice = formData.plan === 'basic' ? 10 : 20;
+    const currentPlanPrice = 20; // Single plan $20
 
     return (
         <div className="max-w-4xl mx-auto w-full px-4">
@@ -949,129 +949,8 @@ export default function RegisterWizard() {
                         </div>
                     )}
 
-                    {/* STEP 4: SELECCIÓN DE PLAN */}
+                    {/* STEP 4: PAGO */}
                     {step === 4 && (
-                        <div className="text-center text-white">
-                            <h2 className="text-3xl md:text-5xl font-black text-primary tracking-tighter uppercase italic mb-4">Vista Previa</h2>
-                            <p className="text-white/60 text-sm mb-8">Así se verá tu Contacto Digital. Elige tu plan y aprueba.</p>
-
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start max-w-5xl mx-auto">
-                                {/* PREVIEW CON TABS */}
-                                <div className="relative order-2 lg:order-1">
-                                    {/* Tabs */}
-                                    <div className="flex gap-2 mb-6 justify-center">
-                                        {['Android', 'iPhone'].map((device) => (
-                                            <button
-                                                key={device}
-                                                onClick={() => setPreviewDevice(device.toLowerCase())}
-                                                className={cn(
-                                                    "px-6 py-2 rounded-xl font-bold text-sm uppercase tracking-wider transition-all",
-                                                    previewDevice === device.toLowerCase()
-                                                        ? "bg-primary text-white shadow-orange"
-                                                        : "bg-white/5 text-white/40 hover:bg-white/10"
-                                                )}
-                                            >
-                                                {device}
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    {/* Preview Card */}
-                                    <div className="bg-gradient-to-br from-cream to-white rounded-[3rem] p-12 shadow-2xl border border-navy/5 max-w-md mx-auto">
-                                        {/* Header con foto */}
-                                        <div className="flex flex-col items-center text-center mb-12">
-                                            <div className="w-36 h-36 rounded-[2.5rem] bg-primary/5 border-4 border-primary/20 mb-6 overflow-hidden flex items-center justify-center shadow-lg">
-                                                {formData.photo ? (
-                                                    <img src={URL.createObjectURL(formData.photo)} className="w-full h-full object-cover" alt="Profile" />
-                                                ) : (
-                                                    <User className="text-primary/30" size={72} />
-                                                )}
-                                            </div>
-                                            <h3 className="text-2xl font-black text-navy mb-3">{formData.name || 'Tu Nombre'}</h3>
-                                            <p className="text-sm font-bold text-primary uppercase tracking-wider mb-3">{formData.profession || 'Tu Profesión'}</p>
-                                            {formData.company && <p className="text-xs text-navy/60 font-medium">{formData.company}</p>}
-                                        </div>
-
-                                        {/* Bio */}
-                                        {formData.bio && (
-                                            <div className="mb-10 p-6 bg-white rounded-3xl border border-navy/5 shadow-sm">
-                                                <p className="text-sm text-navy/70 leading-relaxed">{formData.bio}</p>
-                                            </div>
-                                        )}
-
-                                        {/* Botones de contacto */}
-                                        <div className="space-y-5 mb-10">
-                                            {formData.whatsapp && (
-                                                <div className="flex items-center gap-5 p-6 bg-white rounded-3xl border border-navy/5 shadow-sm hover:shadow-md transition-shadow">
-                                                    <div className="w-14 h-14 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
-                                                        <Smartphone size={24} className="text-green-600" />
-                                                    </div>
-                                                    <div className="text-left flex-1 min-w-0">
-                                                        <p className="text-xs text-navy/50 font-bold uppercase mb-1.5">WhatsApp</p>
-                                                        <p className="text-sm text-navy font-semibold truncate">{formData.whatsapp}</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {formData.email && (
-                                                <div className="flex items-center gap-5 p-6 bg-white rounded-3xl border border-navy/5 shadow-sm hover:shadow-md transition-shadow">
-                                                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                                        <Mail size={24} className="text-primary" />
-                                                    </div>
-                                                    <div className="text-left flex-1 min-w-0">
-                                                        <p className="text-xs text-navy/50 font-bold uppercase mb-1.5">Email</p>
-                                                        <p className="text-sm text-navy font-semibold break-all">{formData.email}</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Botón de acción */}
-                                        <div className="w-full py-6 bg-gradient-to-r from-primary to-accent rounded-3xl text-sm font-black text-white uppercase tracking-widest shadow-orange text-center hover:scale-105 transition-transform cursor-pointer">
-                                            Guardar Contacto
-                                        </div>
-
-                                        {/* Disclaimer */}
-                                        <p className="text-[10px] text-navy/40 text-center mt-8 leading-relaxed px-4">
-                                            * La apariencia final puede variar según el modelo y sistema operativo del dispositivo.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* PLANES */}
-                                <div className="order-1 lg:order-2 space-y-4 text-left">
-                                    {[
-                                        { id: 'basic', title: 'Básico', price: '10', features: ['Contacto Digital Pro', 'Entrega 1hr'] },
-                                        { id: 'pro', title: 'Premium (Pro)', price: '20', features: ['Todo el Básico', 'Código QR Manual', 'Botón WhatsApp Directo'] }
-                                    ].map((p) => (
-                                        <motion.div
-                                            key={p.id}
-                                            onClick={() => updateForm('plan', p.id)}
-                                            className={cn(
-                                                "p-8 rounded-[36px] border-4 transition-all cursor-pointer relative",
-                                                formData.plan === p.id
-                                                    ? "border-primary bg-white/10 shadow-orange"
-                                                    : "border-white/5 bg-white/5 hover:border-white/10"
-                                            )}
-                                        >
-                                            {p.id === 'pro' && <div className="absolute -top-3 right-8 bg-primary text-white px-4 py-1 rounded-full text-[8px] font-black uppercase tracking-widest">Recomendado</div>}
-                                            <div className="flex justify-between items-center mb-4">
-                                                <h3 className="text-xl font-black uppercase tracking-tighter italic">{p.title}</h3>
-                                                <div className={cn("w-6 h-6 rounded-full border-2", formData.plan === p.id ? "bg-primary border-primary" : "border-white/20")} />
-                                            </div>
-                                            <p className="text-4xl font-black mb-6">${p.price}</p>
-                                            <ul className="space-y-2 opacity-40">
-                                                {p.features.map(f => <li key={f} className="text-[9px] font-bold uppercase tracking-widest">✓ {f}</li>)}
-                                            </ul>
-                                        </motion.div>
-                                    ))
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* STEP 5: PAGO */}
-                    {step === 5 && (
                         <div className="max-w-3xl mx-auto text-white">
                             <div className="text-center mb-10">
                                 <h2 className="text-3xl md:text-5xl font-black text-primary tracking-tighter uppercase italic mb-2">Método de Pago</h2>
@@ -1148,142 +1027,177 @@ export default function RegisterWizard() {
                                                 <div className="w-full h-40 rounded-3xl bg-white/5 border-2 border-dashed border-white/10 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-all overflow-hidden relative">
                                                     <input
                                                         type="file"
-                                                        accept="image/*,.pdf"
-                                                        onChange={(e) => updateForm('receipt', e.target.files?.[0] || null)}
+                                                        accept="image/*,application/pdf"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                updateForm('receipt', file);
+                                                                // Crear URL temporal para previsualización (solo si es imagen)
+                                                                if (file.type.startsWith('image/')) {
+                                                                    const url = URL.createObjectURL(file);
+                                                                    updateForm('receiptUrl', url);
+                                                                } else {
+                                                                    updateForm('receiptUrl', null); // PDF no tiene preview simple
+                                                                }
+                                                            }
+                                                        }}
                                                         className="absolute inset-0 opacity-0 cursor-pointer z-10"
                                                     />
                                                     {formData.receipt ? (
-                                                        <div className="flex flex-col items-center p-4">
-                                                            <CheckCircle className="text-primary mb-2" size={32} />
-                                                            <p className="text-[10px] font-black text-white uppercase tracking-widest truncate max-w-[200px]">
-                                                                {formData.receipt.name}
-                                                            </p>
+                                                        <div className="flex flex-col items-center">
+                                                            {formData.receipt.type.startsWith('image/') && formData.receiptUrl ? (
+                                                                <img
+                                                                    src={formData.receiptUrl}
+                                                                    alt="Comprobante"
+                                                                    className="w-full h-full object-cover absolute inset-0 opacity-50"
+                                                                />
+                                                            ) : (
+                                                                <FileText className="text-primary mb-2" size={32} />
+                                                            )}
+                                                            <div className="bg-black/50 p-2 rounded-lg relative z-20">
+                                                                <Check className="text-green-400" size={24} strokeWidth={3} />
+                                                            </div>
+                                                            <p className="text-xs text-white z-20 mt-2 font-bold truncate max-w-[150px]">{formData.receipt.name}</p>
                                                         </div>
                                                     ) : (
                                                         <>
-                                                            <FileText className="text-white/10 group-hover:text-primary transition-colors mb-3" size={40} />
-                                                            <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Subir Comprobante</span>
+                                                            <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
+                                                                <ShieldCheck className="text-white/60 group-hover:text-primary transition-colors" size={24} />
+                                                            </div>
+                                                            <span className="text-[10px] font-black text-white/40 uppercase tracking-widest group-hover:text-white transition-colors">Subir Comprobante</span>
                                                         </>
                                                     )}
                                                 </div>
+                                                {formData.receipt && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            updateForm('receipt', null);
+                                                            updateForm('receiptUrl', '');
+                                                        }}
+                                                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors z-30"
+                                                    >
+                                                        ×
+                                                    </button>
+                                                )}
                                             </div>
+                                        </div>
+                                    </motion.div>
+                                ) : formData.paymentMethod === 'payphone' ? (
+                                    <motion.div
+                                        key="payphone"
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 10 }}
+                                        className="bg-white/5 p-8 rounded-[40px] border border-white/10 text-center max-w-md mx-auto"
+                                    >
+                                        <div className="mb-6">
+                                            <div className="w-16 h-16 bg-[#ff6f00]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <Smartphone className="text-[#ff6f00]" size={32} />
+                                            </div>
+                                            <h3 className="text-xl font-black uppercase italic tracking-tighter mb-2">Pago Seguro con PayPhone</h3>
+                                            <p className="text-sm text-white/60 mb-6">Paga con cualquier tarjeta de crédito o débito de forma segura.</p>
 
+                                            {/* Contenedor del Botón de PayPhone */}
+                                            <div id="pp-button" className="min-h-[50px] flex justify-center">
+                                                <div className="animate-pulse bg-white/10 h-12 w-full rounded-lg flex items-center justify-center">
+                                                    <Loader2 className="animate-spin mr-2" /> Cargando botón de pago...
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-white/30 mt-4">La transacción es procesada directamente por PayPhone.</p>
                                         </div>
                                     </motion.div>
                                 ) : formData.paymentMethod === 'paypal' ? (
                                     <motion.div
                                         key="paypal"
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        className="text-center bg-white/5 p-10 rounded-[40px] border border-white/10 max-w-xl mx-auto"
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 10 }}
+                                        className="bg-white/5 p-8 rounded-[40px] border border-white/10 text-center max-w-md mx-auto"
                                     >
-                                        <h3 className="text-xl font-black uppercase italic tracking-tighter mb-4">Pago vía PayPal</h3>
-                                        <p className="text-white/60 text-xs mb-8 leading-relaxed">
-                                            Aceptamos todas las tarjetas de crédito internacionales y saldo PayPal.
-                                        </p>
-                                        <div className="bg-white p-6 rounded-[30px] flex justify-center min-h-[150px]">
-                                            <PayPalScriptProvider options={{ clientId: "test" }}>
+                                        <div className="mb-6">
+                                            <h3 className="text-xl font-black uppercase italic tracking-tighter mb-2">Pago con PayPal</h3>
+                                            <p className="text-sm text-white/60 mb-6">Paga de forma segura con tu cuenta PayPal.</p>
+                                        </div>
+
+                                        <div className="relative z-0">
+                                            <PayPalScriptProvider options={{ clientId: "test", currency: "USD" }}>
                                                 <PayPalButtons
-                                                    style={{ layout: "vertical", shape: "pill", label: "pay" }}
+                                                    style={{ layout: "vertical", shape: 'rect' }}
                                                     createOrder={(data, actions) => {
                                                         return actions.order.create({
-                                                            intent: "CAPTURE",
-                                                            purchase_units: [{
-                                                                amount: {
-                                                                    currency_code: "USD",
-                                                                    value: currentPlanPrice.toString()
-                                                                }
-                                                            }]
+                                                            intent: "CAPTURE", // Explicit intent
+                                                            purchase_units: [
+                                                                {
+                                                                    amount: {
+                                                                        currency_code: "USD",
+                                                                        value: currentPlanPrice.toString(),
+                                                                    },
+                                                                    description: `Plan ${formData.plan === 'pro' ? 'Premium' : 'Básico'} - RegistrameYa`
+                                                                },
+                                                            ],
                                                         });
                                                     }}
                                                     onApprove={async (data, actions) => {
                                                         if (actions.order) {
-                                                            await actions.order.capture();
-                                                            handleFinalSubmit('pagado');
+                                                            return actions.order.capture().then((details) => {
+                                                                console.log("Pago PayPal completado:", details);
+                                                                handleFinalSubmit('pagado');
+                                                            });
                                                         }
+                                                        return Promise.reject("Order action not available");
                                                     }}
                                                 />
                                             </PayPalScriptProvider>
                                         </div>
                                     </motion.div>
-                                ) : formData.paymentMethod === 'crypto' ? (
+                                ) : (
                                     <motion.div
                                         key="crypto"
-                                        initial={{ opacity: 0, scale: 0.95 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        className="text-center bg-white/5 p-12 rounded-[50px] border border-white/10 max-w-xl mx-auto"
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 10 }}
+                                        className="bg-white/5 p-8 rounded-[40px] border border-white/10 text-center max-w-md mx-auto"
                                     >
-                                        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                                            <Zap className="text-primary" size={40} />
-                                        </div>
-                                        <h3 className="text-2xl font-black uppercase italic mb-2 tracking-tighter">Cripto Pagos</h3>
-                                        <p className="text-white/60 text-sm mb-10 leading-relaxed font-medium">
-                                            Paga con Bitcoin, USDT (TRC20) o Ethereum vía **NOWPayments**.
-                                        </p>
+                                        <h3 className="text-xl font-black uppercase italic tracking-tighter mb-4">Pago con Criptomonedas</h3>
+                                        <p className="text-sm text-white/60 mb-6">Paga con USDT, BTC, ETH de forma segura.</p>
 
-                                        {cryptoPayment ? (
-                                            <div className="bg-white p-6 rounded-[30px] border border-primary/20 space-y-4">
-                                                <div className="flex justify-center mb-2">
-                                                    <div className="w-40 h-40 bg-gray-100 flex items-center justify-center rounded-2xl">
-                                                        <QRCodeSVG value={cryptoPayment.payAddress} size={160} />
-                                                    </div>
-                                                </div>
-                                                <div className="text-left space-y-2">
-                                                    <p className="text-[10px] font-black text-navy/40 uppercase tracking-widest">Enviar</p>
-                                                    <p className="font-bold text-navy text-sm">{cryptoPayment.payAmount} {cryptoPayment.payCurrency.toUpperCase()}</p>
-                                                    <p className="text-[10px] font-black text-navy/40 uppercase tracking-widest">Dirección</p>
-                                                    <p className="font-mono text-navy text-[9px] break-all bg-navy/5 p-2 rounded-lg">{cryptoPayment.payAddress}</p>
-                                                </div>
-                                                <p className="text-[10px] font-bold text-primary uppercase animate-pulse">Esperando confirmación en la red...</p>
-                                            </div>
-                                        ) : (
+                                        {!cryptoPayment ? (
                                             <button
                                                 onClick={handleCryptoPayment}
                                                 disabled={isCreatingCrypto}
-                                                className="bg-primary text-white px-10 py-5 rounded-full font-black text-xs uppercase tracking-widest shadow-orange hover:scale-105 transition-transform disabled:opacity-50"
+                                                className="bg-primary text-white w-full py-4 rounded-xl font-black uppercase tracking-widest shadow-orange hover:scale-105 transition-transform disabled:opacity-50"
                                             >
-                                                {isCreatingCrypto ? 'Generando...' : 'Generar Dirección de Pago'}
+                                                {isCreatingCrypto ? <Loader2 className="animate-spin mx-auto" /> : 'Generar Dirección de Pago'}
                                             </button>
-                                        )}
-                                    </motion.div>
-                                ) : (
-                                    <motion.div
-                                        key="payphone"
-                                        initial={{ opacity: 0, x: 10 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        exit={{ opacity: 0, x: -10 }}
-                                        className="text-center bg-white/5 p-12 rounded-[50px] border border-white/10 max-w-xl mx-auto"
-                                    >
-                                        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-8">
-                                            <Zap className="text-primary" size={40} />
-                                        </div>
-                                        <h3 className="text-2xl font-black uppercase italic tracking-tighter mb-4">Pago Instantáneo</h3>
-                                        <p className="text-white/60 text-sm mb-10 leading-relaxed font-medium">
-                                            Paga de forma segura con tu tarjeta de crédito o débito a través de **PayPhone**. La activación es más rápida.
-                                        </p>
-
-                                        <div className="flex justify-center items-center mt-6 w-full">
-                                            <div className="bg-white p-4 md:p-6 rounded-[30px] shadow-2xl w-full max-w-md overflow-hidden border border-gray-100">
-                                                <div id="pp-button" className="w-full min-h-[450px] flex justify-center text-navy" style={{ color: '#001a33' }}></div>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                <div className="bg-white p-4 rounded-xl mx-auto w-fit">
+                                                    <QRCodeSVG value={cryptoPayment.payAddress} size={150} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-white/40 uppercase font-black">Enviar exacto:</p>
+                                                    <p className="text-xl font-black text-primary">{cryptoPayment.payAmount} {cryptoPayment.payCurrency}</p>
+                                                </div>
+                                                <div className="bg-black/20 p-3 rounded-lg break-all">
+                                                    <p className="text-[10px] font-mono text-white/80">{cryptoPayment.payAddress}</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleFinalSubmit('pendiente')}
+                                                    className="w-full bg-green-500 text-white py-3 rounded-xl font-bold text-sm hover:bg-green-600 transition-colors"
+                                                >
+                                                    Ya realicé el pago
+                                                </button>
                                             </div>
-                                        </div>
+                                        )}
                                     </motion.div>
                                 )}
                             </AnimatePresence>
-
-                            <Script
-                                src="https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js"
-                                strategy="afterInteractive"
-                                onLoad={() => {
-                                    console.log("Script de PayPhone Box v1.1 cargado");
-                                    setPayphoneInitialized(true);
-                                }}
-                            />
                         </div>
                     )}
 
-                    {/* STEP 6: EN REVISIÓN */}
-                    {step === 6 && (
+                    {/* STEP 5: EN REVISIÓN */}
+                    {step === 5 && (
                         <div className="max-w-2xl mx-auto text-center">
                             <motion.div
                                 initial={{ scale: 0 }}

@@ -99,7 +99,7 @@ export default function Home() {
               href="/registro"
               className="w-full sm:w-auto bg-primary text-white px-8 py-5 rounded-full font-black text-xl shadow-orange hover:translate-y-[-2px] transition-transform flex items-center justify-center gap-3"
             >
-              Crear mi Contacto Digital ($10) <ArrowRight size={24} />
+              Crear mi Contacto Digital ($20) <ArrowRight size={24} />
             </a>
             <a
               href="#demo-video"
@@ -278,66 +278,44 @@ export default function Home() {
       <section className="py-24 bg-cream" id="precios" style={{ position: 'relative', zIndex: 10 }}>
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black text-navy tracking-tighter uppercase">Elige tu Plan</h2>
-            <p className="text-navy/60 mt-4 text-lg">Inversión única que se paga con tu primer cliente nuevo.</p>
+            <h2 className="text-3xl md:text-5xl font-black text-navy tracking-tighter uppercase">Plan Único</h2>
+            <p className="text-navy/60 mt-4 text-lg">Todo incluido. Sin sorpresas.</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto items-start">
-            {/* Plan Básico $10 */}
-            <div className="bg-white p-8 rounded-[30px] shadow-lg border border-navy/5 flex flex-col relative overflow-hidden h-full">
-              <h3 className="text-xl font-black text-navy uppercase tracking-widest mb-2">Contacto Digital</h3>
+          <div className="max-w-md mx-auto">
+            {/* Plan Único $20 */}
+            <div className="bg-white p-8 rounded-[30px] shadow-xl border-4 border-primary flex flex-col relative overflow-hidden transform hover:scale-105 transition-transform duration-300">
+              <div className="absolute top-0 right-0 bg-primary text-white text-[10px] font-black uppercase px-4 py-2 rounded-bl-xl">Oferta Especial</div>
+
+              <h3 className="text-2xl font-black text-navy uppercase tracking-widest mb-2">Profesional Pro</h3>
               <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-5xl font-black text-navy">$10</span>
-                <span className="text-navy/40 text-xs font-bold uppercase tracking-widest">Pago Único</span>
+                <span className="text-6xl font-black text-primary">$20</span>
+                <span className="text-navy/40 text-sm font-bold uppercase tracking-widest">Pago Anual</span>
               </div>
 
-              <ul className="space-y-4 mb-8 flex-grow">
-                <li className="flex items-center gap-3 text-navy font-medium text-sm">
-                  <CheckCircle2 size={18} className="text-navy/40 shrink-0" /> Diseño Profesional con Foto
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-center gap-3 text-navy font-bold text-base">
+                  <CheckCircle2 size={20} className="text-primary shrink-0" /> Tarjeta Digital Profesional
                 </li>
-                <li className="flex items-center gap-3 text-navy font-medium text-sm">
-                  <CheckCircle2 size={18} className="text-navy/40 shrink-0" /> Botones de Llamada y WhatsApp
+                <li className="flex items-center gap-3 text-navy font-bold text-base">
+                  <QrCode size={20} className="text-primary shrink-0" /> Código QR Dinámico (Editable)
                 </li>
-                <li className="flex items-center gap-3 text-navy font-medium text-sm">
-                  <CheckCircle2 size={18} className="text-navy/40 shrink-0" /> Enlace para compartir
+                <li className="flex items-center gap-3 text-navy font-bold text-base">
+                  <CheckCircle2 size={20} className="text-primary shrink-0" /> Botones Directos de Contacto
+                </li>
+                <li className="flex items-center gap-3 text-navy font-bold text-base">
+                  <CheckCircle2 size={20} className="text-primary shrink-0" /> Galería de Fotos (Trabajos)
+                </li>
+                <li className="flex items-center gap-3 text-navy font-bold text-base">
+                  <ShieldCheck size={20} className="text-primary shrink-0" /> Soporte Prioritario WhatsApp
                 </li>
               </ul>
 
-              <a href="/registro?plan=basic" className="block w-full bg-navy/5 text-navy py-4 rounded-full font-black text-lg hover:bg-navy/10 transition-colors text-center mt-auto">
-                Elegir Básico
+              <a href="/registro" className="block w-full bg-primary text-white py-5 rounded-full font-black text-xl shadow-orange hover:shadow-xl transition-all text-center mb-4">
+                QUIERO MI CONTACTO
               </a>
-            </div>
-
-            {/* Plan Negocio $20 */}
-            <div className="bg-white p-8 rounded-[30px] shadow-xl border-4 border-primary flex flex-col relative overflow-hidden h-full">
-              <div className="absolute top-0 right-0 bg-primary text-white text-[10px] font-black uppercase px-3 py-1 rounded-bl-lg">Más Vendido</div>
-
-              <h3 className="text-xl font-black text-navy uppercase tracking-widest mb-2">Negocio Pro</h3>
-              <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-5xl font-black text-primary">$20</span>
-                <span className="text-navy/40 text-xs font-bold uppercase tracking-widest">Pago Único*</span>
-              </div>
-
-              <ul className="space-y-4 mb-8 flex-grow">
-                <li className="flex items-center gap-3 text-navy font-bold text-sm">
-                  <CheckCircle2 size={18} className="text-primary shrink-0" /> Todo lo del Plan Básico
-                </li>
-                <li className="flex items-center gap-3 text-navy font-bold text-sm">
-                  <QrCode size={18} className="text-primary shrink-0" /> Código QR para Imprimir
-                </li>
-                <li className="flex items-center gap-3 text-navy font-bold text-sm">
-                  <CheckCircle2 size={18} className="text-primary shrink-0" /> Galería de 3 Fotos
-                </li>
-                <li className="flex items-center gap-3 text-navy font-bold text-sm">
-                  <ShieldCheck size={18} className="text-primary shrink-0" /> Soporte Prioritario
-                </li>
-              </ul>
-
-              <a href="/registro?plan=pro" className="block w-full bg-primary text-white py-4 rounded-full font-black text-lg shadow-orange hover:scale-105 transition-transform text-center mb-3 mt-auto">
-                QUIERO ESTE
-              </a>
-              <p className="text-[9px] text-center text-navy/30 leading-tight">
-                *Incluye QR y Edición. Renovación opcional de $10/año para mantener el hosting del QR y cambios ilimitados.
+              <p className="text-[10px] text-center text-navy/40 leading-tight font-medium">
+                *Incluye hosting, dominio y mantenimiento por 1 año. Renovación anual de $10.
               </p>
             </div>
           </div>
@@ -417,7 +395,7 @@ export default function Home() {
               },
               {
                 q: "¿El Código QR funciona para siempre?",
-                a: "Sí. En el Plan de $20, el código QR es dinámico. Si cambias de número, actualizamos tu contacto y el mismo QR impreso sigue funcionando. Este servicio tiene un costo de mantenimiento anual de $10 a partir del segundo año."
+                a: "Sí, el código QR es dinámico. Si cambias de número, actualizamos tu contacto y el mismo QR impreso sigue funcionando."
               },
               {
                 q: "¿Cómo recibo mi contacto?",
@@ -425,7 +403,7 @@ export default function Home() {
               },
               {
                 q: "¿Tengo que pagar mensualidades?",
-                a: "No. El plan de $10 es un único pago de por vida. El plan de $20 tiene una renovación anual opcional de $10 solo si quieres mantener el QR dinámico activo y la posibilidad de editar tu contacto."
+                a: "No. Es un pago anual de $20 que incluye hosting, mantenimiento y actualizaciones. La renovación es de solo $10 al año."
               }
             ].map((item, i) => (
               <details key={i} className="group bg-gray-50 rounded-2xl p-6 cursor-pointer border border-gray-100 hover:bg-gray-100 transition-colors">
