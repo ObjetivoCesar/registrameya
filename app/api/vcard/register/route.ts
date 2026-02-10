@@ -11,35 +11,37 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
+
+        // El cliente envía los nombres de columnas de DB directamente (nombre, email, etc.)
         const {
-            name, email, whatsapp, profession, company, bio, address,
-            web, instagram, linkedin, facebook, tiktok, products,
-            plan, photo_url, comprobante_url, galeria_urls,
+            nombre, email, whatsapp, profesion, empresa, bio, direccion,
+            web, instagram, linkedin, facebook, tiktok, productos_servicios,
+            plan, foto_url, comprobante_url, galeria_urls,
             status, slug, etiquetas
         } = body;
 
         // Validación básica
-        if (!email || !name) {
+        if (!email || !nombre) {
             return NextResponse.json({ error: 'Email y Nombre son requeridos' }, { status: 400 });
         }
 
         // Upsert usando Service Role (bypass RLS)
         const upsertData = {
-            nombre: name,
+            nombre: nombre,
             email: email,
             whatsapp: whatsapp,
-            profesion: profession,
-            empresa: company,
+            profesion: profesion,
+            empresa: empresa,
             bio: bio,
-            direccion: address,
+            direccion: direccion,
             web: web,
             instagram: instagram,
             linkedin: linkedin,
             facebook: facebook,
             tiktok: tiktok,
-            productos_servicios: products,
+            productos_servicios: productos_servicios,
             plan: plan,
-            foto_url: photo_url,
+            foto_url: foto_url,
             comprobante_url: comprobante_url,
             galeria_urls: galeria_urls,
             status: status || 'pendiente',
