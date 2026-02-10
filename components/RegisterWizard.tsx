@@ -469,22 +469,9 @@ export default function RegisterWizard() {
                 console.error("Error al disparar notificación WhatsApp:", notifyErr);
             }
 
-            // 4c. COPIA DE SEGURIDAD (Backup JSON via Email)
-            try {
-                fetch('/api/send-vcard', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        email: 'admin@registraya.com', // Dirección de backup
-                        name: `BACKUP_${formData.name}`,
-                        backupData: upsertData,
-                        vcardUrl: '#',
-                        qrUrl: ''
-                    })
-                }).catch(err => console.error("Error silencioso en backup email:", err));
-            } catch (backupEmailErr) {
-                console.error("Error al disparar backup email:", backupEmailErr);
-            }
+            // Nota: El backup por email fue removido porque el endpoint
+            // /api/send-vcard ahora requiere autenticación admin.
+            // La notificación WhatsApp arriba ya sirve como alerta al admin.
 
 
             setIsSubmitting(false);

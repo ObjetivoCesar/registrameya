@@ -208,10 +208,14 @@ export default function AdminDashboard() {
 
             setEditingRegistro({ ...editingRegistro, foto_url: publicUrl });
 
-            await supabase
-                .from('registraya_vcard_registros')
-                .update({ foto_url: publicUrl })
-                .eq('id', editingRegistro.id);
+            await fetch('/api/admin/registros', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-key': localStorage.getItem('admin_access_key') || ''
+                },
+                body: JSON.stringify({ id: editingRegistro.id, foto_url: publicUrl })
+            });
 
         } catch (err: any) {
             alert("Error subiendo foto: " + err.message);
@@ -246,10 +250,14 @@ export default function AdminDashboard() {
 
             setEditingRegistro({ ...editingRegistro, galeria_urls: newUrls });
 
-            await supabase
-                .from('registraya_vcard_registros')
-                .update({ galeria_urls: newUrls })
-                .eq('id', editingRegistro.id);
+            await fetch('/api/admin/registros', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-admin-key': localStorage.getItem('admin_access_key') || ''
+                },
+                body: JSON.stringify({ id: editingRegistro.id, galeria_urls: newUrls })
+            });
 
         } catch (err: any) {
             alert("Error subiendo galería: " + err.message);
@@ -264,10 +272,14 @@ export default function AdminDashboard() {
         newUrls.splice(index, 1);
         setEditingRegistro({ ...editingRegistro, galeria_urls: newUrls });
 
-        await supabase
-            .from('registraya_vcard_registros')
-            .update({ galeria_urls: newUrls })
-            .eq('id', editingRegistro.id);
+        await fetch('/api/admin/registros', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-admin-key': localStorage.getItem('admin_access_key') || ''
+            },
+            body: JSON.stringify({ id: editingRegistro.id, galeria_urls: newUrls })
+        });
     };
 
     const filtered = registros.filter(r => {
