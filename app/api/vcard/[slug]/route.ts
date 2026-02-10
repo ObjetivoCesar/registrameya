@@ -62,90 +62,95 @@ export async function GET(
             // console.log("Status warning:", user.status);
         }
 
-        // 1b. Formatear Notas con Galería, Productos y Redes (para redundancia)
-        let noteContent = `${user.bio || ''}`;
+        // 1b. Formatear Notas con Galería, Productos y Redes
+        // En vCard 3.0, los saltos de línea se representan con \n (literal backslash + n)
+        // Pero primero limpiamos cualquier salto de línea real del contenido para evitar roturas
+        const sanitize = (text: string) => text ? text.replace(/\r?\n/g, '\\n') : '';
+
+        let noteContent = `${sanitize(user.bio)}`;
         if (user.productos_servicios) {
-            noteContent += `\n\nProductos/Servicios:\n${user.productos_servicios}`;
+            noteContent += `\\n\\nProductos/Servicios:\\n${sanitize(user.productos_servicios)}`;
         }
 
         if (user.instagram || user.facebook || user.linkedin || user.tiktok) {
-            noteContent += `\n\nRedes Sociales:`;
-            if (user.facebook) noteContent += `\nFB: ${user.facebook}`;
-            if (user.instagram) noteContent += `\nIG: ${user.instagram}`;
-            if (user.tiktok) noteContent += `\nTK: ${user.tiktok}`;
-            if (user.linkedin) noteContent += `\nLI: ${user.linkedin}`;
+            noteContent += `\\n\\nRedes Sociales:`;
+            if (user.facebook) noteContent += `\\nFB: ${user.facebook}`;
+            if (user.instagram) noteContent += `\\nIG: ${user.instagram}`;
+            if (user.tiktok) noteContent += `\\nTK: ${user.tiktok}`;
+            if (user.linkedin) noteContent += `\\nLI: ${user.linkedin}`;
         }
 
         if (user.galeria_urls && user.galeria_urls.length > 0) {
-            noteContent += `\n\nMis Trabajos:\n${user.galeria_urls.join('\n')}`;
+            noteContent += `\\n\\nMis Trabajos:\\n${user.galeria_urls.join('\\n')}`;
         }
 
         if (user.etiquetas) {
-            noteContent += `\n\nEtiquetas: ${user.etiquetas}`;
+            noteContent += `\\n\\nEtiquetas: ${sanitize(user.etiquetas)}`;
         }
 
-        noteContent += `\n\n- RegistrameYa`;
+        noteContent += `\\n\\n- RegistrameYa`;
 
         // Limpiar WhatsApp para el campo TEL
-        const cleanWhatsApp = user.whatsapp.replace(/\s+/g, '');
+        const cleanWhatsApp = user.whatsapp.replace(/\D/g, ''); // Solo números
 
-        // 2. Generar vCard con todos los campos (Version 2.1 - Máxima compatibilidad móvil)
-        const vcardArr = [
+        // Función para line folding (obligatorio en vCard para líneas largas)
+        const foldLine = (line: string) => {
+            const maxLength = 75;
+            if (line.length <= maxLength) return line;
+            let folded = '';
+            for (let i = 0; i < line.length; i += maxLength) {
+                folded += (i > 0 ? ' ' : '') + line.substring(i, i + maxLength) + '\r\n';
+            }
+            return folded.trim();
+        };
+
+        // 2. Generar vCard con todos los campos (Version 3.0 - Estándar moderno)
+        const vcardLines = [
             'BEGIN:VCARD',
-            'VERSION:2.1',
+            'VERSION:3.0',
             `FN:${user.nombre}`,
             `N:${user.nombre.split(' ').reverse().join(';')};;;`,
             user.profesion ? `TITLE:${user.profesion}` : '',
             user.empresa ? `ORG:${user.empresa}` : '',
-            `TEL;TYPE=CELL:${cleanWhatsApp}`,
+            `TEL;TYPE=CELL,VOICE:${cleanWhatsApp}`,
             `EMAIL;TYPE=WORK,INTERNET:${user.email}`,
-
-            // Dirección con etiqueta personalizada para iOS (Ubicación)
-            `item1.ADR:;;${user.direccion || ''};;;;`,
-            `item1.X-ABLabel:Ubicación`,
-
+            user.direccion ? `ADR;TYPE=WORK:;;${user.direccion};;;;` : '',
             user.web ? `URL:${user.web}` : '',
-
-            // Redes Sociales con etiquetas personalizadas
-            user.instagram ? `item2.URL:${user.instagram}` : '',
-            user.instagram ? `item2.X-ABLabel:Instagram` : '',
-
-            user.facebook ? `item3.URL:${user.facebook}` : '',
-            user.facebook ? `item3.X-ABLabel:Facebook` : '',
-
-            user.linkedin ? `item4.URL:${user.linkedin}` : '',
-            user.linkedin ? `item4.X-ABLabel:LinkedIn` : '',
-
-            user.tiktok ? `item5.URL:${user.tiktok}` : '',
-            user.tiktok ? `item5.X-ABLabel:TikTok` : '',
-
-            `NOTE:${noteContent.replace(/\n/g, '\\n')}`
+            `NOTE:${noteContent}`,
+            // Redes Sociales como URL en vCard 3.0
+            user.instagram ? `URL;type=INSTAGRAM:${user.instagram}` : '',
+            user.facebook ? `URL;type=FACEBOOK:${user.facebook}` : '',
+            user.linkedin ? `URL;type=LINKEDIN:${user.linkedin}` : '',
+            user.tiktok ? `URL;type=TIKTOK:${user.tiktok}` : '',
         ];
 
-        // Procesar foto de forma síncrona/inline para evitar problemas de flujo
+        // Procesar foto
         if (user.foto_url) {
             try {
-                const photoResp = await fetch(user.foto_url);
+                const photoResp = await fetch(user.foto_url, { next: { revalidate: 3600 } });
                 if (photoResp.ok) {
                     const buffer = await photoResp.arrayBuffer();
                     const b64 = Buffer.from(buffer).toString('base64');
-                    // Formato más compatible para PHOTO en vCard 2.1
-                    vcardArr.push(`PHOTO;JPEG;ENCODING=BASE64:\r\n${b64}\r\n`);
+                    // vCard 3.0 PHOTO syntax
+                    vcardLines.push(foldLine(`PHOTO;ENCODING=b;TYPE=JPEG:${b64}`));
                 }
             } catch (e) {
                 console.error("Error inline photo:", e);
+                // Si falla la foto, el archivo sigue siendo válido
             }
         }
 
-        vcardArr.push('END:VCARD');
-        const vcard = vcardArr.filter(Boolean).join('\r\n');
+        vcardLines.push('END:VCARD');
+
+        // Filtramos líneas vacías y unimos con \r\n
+        const vcard = vcardLines.filter(Boolean).join('\r\n');
 
         // 3. Retornar con headers estándar
         return new NextResponse(vcard, {
             status: 200,
             headers: {
                 'Content-Type': 'text/vcard; charset=UTF-8',
-                'Content-Disposition': `inline; filename="${slug}.vcf"`,
+                'Content-Disposition': `attachment; filename="${user.slug || slug}.vcf"`,
                 'Cache-Control': 'no-store, max-age=0',
             },
         });

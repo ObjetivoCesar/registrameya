@@ -313,6 +313,31 @@ export default function RegisterWizard() {
         });
     };
 
+    const handleImageProcess = async (file: File): Promise<File | null> => {
+        if (!file) return null;
+
+        // Alerta si es muy pesada (> 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            alert(`La imagen "${file.name}" es muy pesada. La optimizaremos automáticamente para que no haya problemas.`);
+        }
+
+        if (file.type.startsWith('image/')) {
+            try {
+                const options = {
+                    maxSizeMB: 0.7, // Un poco más permisivo para calidad
+                    maxWidthOrHeight: 1200,
+                    useWebWorker: true,
+                };
+                const compressedFile = await imageCompression(file, options);
+                return new File([compressedFile], file.name, { type: file.type });
+            } catch (error) {
+                console.error("Error al comprimir imagen:", error);
+                return file;
+            }
+        }
+        return file;
+    };
+
 
 
     const generateVCard = (data: typeof formData, photoBase64: string | null, galleryUrls: string[] = [], categories: string = '') => {
@@ -916,7 +941,13 @@ export default function RegisterWizard() {
                                         <input
                                             type="file"
                                             accept="image/*"
-                                            onChange={(e) => updateForm('photo', e.target.files?.[0] || null)}
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    const processed = await handleImageProcess(file);
+                                                    updateForm('photo', processed);
+                                                }
+                                            }}
                                             className="absolute inset-0 opacity-0 cursor-pointer z-10"
                                         />
                                         {formData.photo ? (
@@ -941,10 +972,59 @@ export default function RegisterWizard() {
                                         </button>
                                     )}
                                 </div>
-                                <p className="text-sm text-navy/60 font-medium max-w-sm">
-                                    Una foto profesional o un logo claro aumenta tu confianza en un <span className="text-primary font-black">200%</span>.
-                                </p>
+                            </div>
 
+                            {/* GALERÍA DE TRABAJOS (Solo visible para Pro/Todo incluido ahora) */}
+                            <div className="w-full pt-8 border-t border-navy/5">
+                                <div className="text-center mb-6">
+                                    <h3 className="text-xl font-black text-navy tracking-tighter uppercase italic">Galería de Trabajos</h3>
+                                    <p className="text-[10px] font-bold text-navy/30 uppercase tracking-widest">Muestra tus mejores proyectos (Hasta 6 fotos)</p>
+                                </div>
+
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    {formData.gallery.map((file, idx) => (
+                                        <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden group shadow-md">
+                                            <img
+                                                src={URL.createObjectURL(file)}
+                                                className="w-full h-full object-cover"
+                                                alt={`Trabajo ${idx + 1}`}
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    const newGallery = [...formData.gallery];
+                                                    newGallery.splice(idx, 1);
+                                                    updateForm('gallery', newGallery);
+                                                }}
+                                                className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    {formData.gallery.length < 6 && (
+                                        <div className="aspect-square rounded-2xl bg-white border-2 border-dashed border-navy/10 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-all relative">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                multiple
+                                                onChange={async (e) => {
+                                                    const files = Array.from(e.target.files || []);
+                                                    const processedFiles: File[] = [];
+                                                    for (const f of files) {
+                                                        if (formData.gallery.length + processedFiles.length >= 6) break;
+                                                        const p = await handleImageProcess(f);
+                                                        if (p) processedFiles.push(p);
+                                                    }
+                                                    updateForm('gallery', [...formData.gallery, ...processedFiles]);
+                                                }}
+                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                            />
+                                            <Camera className="text-navy/10 mb-2" size={24} />
+                                            <span className="text-[8px] font-black text-navy/30 uppercase tracking-widest">Añadir</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}
@@ -1028,13 +1108,14 @@ export default function RegisterWizard() {
                                                     <input
                                                         type="file"
                                                         accept="image/*,application/pdf"
-                                                        onChange={(e) => {
+                                                        onChange={async (e) => {
                                                             const file = e.target.files?.[0];
                                                             if (file) {
-                                                                updateForm('receipt', file);
+                                                                const processed = await handleImageProcess(file);
+                                                                updateForm('receipt', processed);
                                                                 // Crear URL temporal para previsualización (solo si es imagen)
-                                                                if (file.type.startsWith('image/')) {
-                                                                    const url = URL.createObjectURL(file);
+                                                                if (processed && processed.type.startsWith('image/')) {
+                                                                    const url = URL.createObjectURL(processed);
                                                                     updateForm('receiptUrl', url);
                                                                 } else {
                                                                     updateForm('receiptUrl', null); // PDF no tiene preview simple
