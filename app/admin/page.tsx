@@ -331,7 +331,7 @@ export default function AdminDashboard() {
             alert("✅ Correo enviado con éxito");
 
             if (registro.status !== 'entregado') {
-                updateStatus(registro.id, 'entregado');
+                await updateStatus(registro.id, 'entregado');
             }
 
         } catch (error: any) {
