@@ -260,7 +260,7 @@ export default function RegisterWizard() {
 
             const { data, error } = await supabase.storage
                 .from(bucket)
-                .upload(finalPath, fileToUpload, { upsert: true });
+                .upload(finalPath, fileToUpload, { upsert: false });
 
             if (error) throw error;
             const { data: { publicUrl } } = supabase.storage

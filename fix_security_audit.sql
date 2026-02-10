@@ -48,6 +48,7 @@ WITH CHECK (
         OR name ILIKE '%.png'
         OR name ILIKE '%.webp'
         OR name ILIKE '%.gif'
+        OR name ILIKE '%.pdf' -- Permitir comprobantes en PDF
     )
 );
 
