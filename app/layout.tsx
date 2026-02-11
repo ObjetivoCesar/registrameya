@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Montserrat } from "next/font/google";
 import "./globals.css";
+import PWARegistration from "@/components/PWARegistration";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -43,6 +44,14 @@ export const metadata: Metadata = {
     shortcut: '/favicon.ico',
     apple: '/images/logo.png',
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Regístrame Ya!',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export default function RootLayout({
@@ -55,6 +64,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${montserrat.variable} font-sans antialiased bg-cream text-navy`}
       >
+        <PWARegistration />
         {children}
       </body>
     </html>
