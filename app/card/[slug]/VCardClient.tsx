@@ -235,23 +235,7 @@ ADR;TYPE=WORK:;;${data.direccion};;;;`;
                             <Download size={24} /> <span id="btn-download-text">Guardar Contacto</span>
                         </button>
 
-                        {/* Galería (Solo si hay fotos en galeria_urls) */}
-                        {data.galeria_urls && data.galeria_urls.length > 0 && (
-                            <div className="text-left border-t border-navy/5 pt-10">
-                                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-navy/30 mb-6 italic">Mis Mejores Trabajos</h3>
-                                <div className="grid grid-cols-3 gap-3">
-                                    {data.galeria_urls.map((url: string, i: number) => (
-                                        <motion.div
-                                            key={i}
-                                            whileHover={{ scale: 1.05 }}
-                                            className="aspect-square rounded-2xl bg-cream border border-navy/5 overflow-hidden shadow-soft"
-                                        >
-                                            <img src={url} className="w-full h-full object-cover" alt={`Trabajo ${i + 1}`} />
-                                        </motion.div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+
 
                         {/* Bio / Descripción */}
                         {data.bio && (

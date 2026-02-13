@@ -84,7 +84,6 @@ export default function RegisterWizard() {
         categories: '',
         plan: 'pro' as 'basic' | 'pro',
         photo: null as File | null,
-        gallery: [] as File[],
         receipt: null as File | null,
         receiptUrl: '',
         paymentMethod: 'transfer' as 'transfer' | 'payphone' | 'paypal' | 'crypto',
@@ -352,7 +351,7 @@ export default function RegisterWizard() {
 
 
 
-    const generateVCard = (data: typeof formData, photoBase64: string | null, galleryUrls: string[] = [], categories: string = '') => {
+    const generateVCard = (data: typeof formData, photoBase64: string | null, categories: string = '') => {
         // vCard 4.0 format
         let photoBlock = '';
         if (photoBase64) {
@@ -361,9 +360,6 @@ export default function RegisterWizard() {
         }
 
         let noteContent = `${data.bio}${data.products ? '\n\nProductos/Servicios:\n' + data.products : ''} - Generado con RegistrameYa`;
-        if (galleryUrls.length > 0) {
-            noteContent += `\n\nMis Trabajos:\n${galleryUrls.join('\n')}`;
-        }
 
         const vcard = [
             'BEGIN:VCARD',
@@ -396,7 +392,6 @@ export default function RegisterWizard() {
         setIsSubmitting(true);
         try {
             let photoUrl = null;
-            let galleryUrls: string[] = [];
             let receiptUrl = null;
             let photoBase64 = null;
 
@@ -448,17 +443,7 @@ export default function RegisterWizard() {
                 receiptUrl = existingUser.comprobante_url;
             }
 
-            // 2b. Subir galería (solo si es Pro)
-            if (formData.plan === 'pro') {
-                if (formData.gallery.length > 0) {
-                    for (const file of formData.gallery) {
-                        const url = await compressAndUpload(file, 'vcards', `gallery/${timestamp}-${file.name}`);
-                        galleryUrls.push(url);
-                    }
-                } else if (existingUser) {
-                    galleryUrls = existingUser.galeria_urls || [];
-                }
-            }
+
 
             // 3. UPSERT: Inserta o Actualiza por email
             const upsertData = {
@@ -479,7 +464,6 @@ export default function RegisterWizard() {
                 plan: formData.plan,
                 foto_url: photoUrl,
                 comprobante_url: receiptUrl,
-                galeria_urls: galleryUrls,
                 status: forcedStatus || 'pendiente',
                 slug: slug,
                 etiquetas: finalCategories
@@ -1002,58 +986,7 @@ export default function RegisterWizard() {
                                 </div>
                             </div>
 
-                            {/* GALERÍA DE TRABAJOS (Solo visible para Pro/Todo incluido ahora) */}
-                            <div className="w-full pt-8 border-t border-navy/5">
-                                <div className="text-center mb-6">
-                                    <h3 className="text-xl font-black text-navy tracking-tighter uppercase italic">Galería de Trabajos</h3>
-                                    <p className="text-[10px] font-bold text-navy/30 uppercase tracking-widest">Muestra tus mejores proyectos (Hasta 6 fotos)</p>
-                                </div>
 
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                    {formData.gallery.map((file, idx) => (
-                                        <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden group shadow-md">
-                                            <img
-                                                src={URL.createObjectURL(file)}
-                                                className="w-full h-full object-cover"
-                                                alt={`Trabajo ${idx + 1}`}
-                                            />
-                                            <button
-                                                onClick={() => {
-                                                    const newGallery = [...formData.gallery];
-                                                    newGallery.splice(idx, 1);
-                                                    updateForm('gallery', newGallery);
-                                                }}
-                                                className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                                            >
-                                                ×
-                                            </button>
-                                        </div>
-                                    ))}
-
-                                    {formData.gallery.length < 6 && (
-                                        <div className="aspect-square rounded-2xl bg-white border-2 border-dashed border-navy/10 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-all relative">
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                multiple
-                                                onChange={async (e) => {
-                                                    const files = Array.from(e.target.files || []);
-                                                    const processedFiles: File[] = [];
-                                                    for (const f of files) {
-                                                        if (formData.gallery.length + processedFiles.length >= 6) break;
-                                                        const p = await handleImageProcess(f);
-                                                        if (p) processedFiles.push(p);
-                                                    }
-                                                    updateForm('gallery', [...formData.gallery, ...processedFiles]);
-                                                }}
-                                                className="absolute inset-0 opacity-0 cursor-pointer"
-                                            />
-                                            <Camera className="text-navy/10 mb-2" size={24} />
-                                            <span className="text-[8px] font-black text-navy/30 uppercase tracking-widest">Añadir</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
                         </div>
                     )}
 
@@ -1325,8 +1258,8 @@ export default function RegisterWizard() {
                                     className="w-full h-full object-cover"
                                     alt="Entrega en 60 minutos"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-navy/60 to-transparent flex items-end justify-center pb-4">
-                                    <span className="text-white font-black text-xs uppercase tracking-tighter">Entrega en 60 min</span>
+                                <div className="absolute inset-x-0 bottom-0 bg-primary/90 backdrop-blur-sm py-2 flex items-center justify-center border-t border-white/20">
+                                    <span className="text-white font-black text-xs uppercase tracking-widest">Entrega en 60 minutos</span>
                                 </div>
                             </div>
                             <p className="text-2xl md:text-3xl font-black text-primary text-center mb-3 leading-tight">
