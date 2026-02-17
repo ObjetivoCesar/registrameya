@@ -105,13 +105,46 @@ export async function GET(
         };
 
         // 2. Generar vCard con todos los campos (Version 3.0 - Estándar moderno)
+
+        // Determine full name and structured name based on profile type
+        let fullName = '';
+        let structuredName = '';
+
+        if (user.tipo_perfil === 'negocio') {
+            // Business profile
+            fullName = user.nombre_negocio || user.nombre;
+
+            // If there's a contact person, use their name
+            if (user.contacto_nombre || user.contacto_apellido) {
+                structuredName = `${user.contacto_apellido || ''};${user.contacto_nombre || ''};;;`;
+            } else {
+                // No contact: leave N field empty
+                structuredName = ';;;;';
+            }
+        } else {
+            // Person profile (or legacy record)
+            if (user.nombres || user.apellidos) {
+                // New format with separated fields
+                fullName = `${user.nombres || ''} ${user.apellidos || ''}`.trim();
+                structuredName = `${user.apellidos || ''};${user.nombres || ''};;;`;
+            } else {
+                // Legacy format: use old 'nombre' field
+                fullName = user.nombre;
+                // Try to split intelligently (first word = first name, rest = last name)
+                const nameParts = user.nombre.split(' ');
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
+                structuredName = `${lastName};${firstName};;;`;
+            }
+        }
+
         const vcardLines = [
             'BEGIN:VCARD',
             'VERSION:3.0',
-            `FN:${user.nombre}`,
-            `N:${user.nombre.split(' ').reverse().join(';')};;;`,
+            `FN:${fullName}`,
+            `N:${structuredName}`,
             user.profesion ? `TITLE:${user.profesion}` : '',
-            user.empresa ? `ORG:${user.empresa}` : '',
+            user.empresa || (user.tipo_perfil === 'negocio' ? user.nombre_negocio : '') ? `ORG:${user.empresa || user.nombre_negocio || ''}` : '',
             `TEL;TYPE=CELL,VOICE:${cleanWhatsApp}`,
             `EMAIL;TYPE=WORK,INTERNET:${user.email}`,
             user.direccion ? `ADR;TYPE=WORK:;;${user.direccion};;;;` : '',

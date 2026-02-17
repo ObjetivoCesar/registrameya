@@ -67,7 +67,21 @@ export default function RegisterWizard() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showVideoGuide, setShowVideoGuide] = useState(true);
     const [formData, setFormData] = useState({
+        // Profile type
+        profileType: 'persona' as 'persona' | 'negocio',
+
+        // For persona
+        firstName: '',
+        lastName: '',
+
+        // For negocio
+        businessName: '',
+        contactFirstName: '',
+        contactLastName: '',
+
+        // Legacy field (computed from above)
         name: '',
+
         profession: '',
         company: '',
         whatsapp: '',
@@ -293,15 +307,17 @@ export default function RegisterWizard() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     amount: currentPlanPrice,
-                    email: formData.email,
-                    orderId: `vcard-${Date.now()}`
+                    email: formData.email
                 })
             });
             const data = await response.json();
-            if (data.paymentId) {
-                setCryptoPayment(data);
+
+            if (response.ok && data.paymentUrl) {
+                // Redirigir directamente al portal de Crossmint
+                window.location.href = data.paymentUrl;
             } else {
-                alert(data.error || "Error al generar el pago cripto");
+                console.error("Crossmint Error Completo:", data);
+                alert(data.error || "Error al generar el portal de pago");
             }
         } catch (error) {
             console.error("Crypto Error:", error);
@@ -352,6 +368,31 @@ export default function RegisterWizard() {
 
 
     const generateVCard = (data: typeof formData, photoBase64: string | null, categories: string = '') => {
+        // Determine full name and structured name based on profile type
+        let fullName = '';
+        let structuredName = '';
+        let organization = '';
+
+        if (data.profileType === 'persona') {
+            // For person: combine first and last name
+            fullName = `${data.firstName} ${data.lastName}`.trim();
+            // N field: LastName;FirstName;MiddleName;Prefix;Suffix
+            structuredName = `${data.lastName};${data.firstName};;;`;
+            organization = data.company || '';
+        } else {
+            // For business: use business name
+            fullName = data.businessName;
+            organization = data.businessName;
+
+            // If there's a contact person, use their name in N field
+            if (data.contactFirstName || data.contactLastName) {
+                structuredName = `${data.contactLastName || ''};${data.contactFirstName || ''};;;`;
+            } else {
+                // No contact: leave N field empty (valid in vCard 4.0)
+                structuredName = ';;;;';
+            }
+        }
+
         // vCard 4.0 format
         let photoBlock = '';
         if (photoBase64) {
@@ -364,10 +405,10 @@ export default function RegisterWizard() {
         const vcard = [
             'BEGIN:VCARD',
             'VERSION:4.0',
-            `FN;CHARSET=UTF-8:${data.name}`,
-            `N;CHARSET=UTF-8:${data.name.split(' ').reverse().join(';')};;;`,
+            `FN;CHARSET=UTF-8:${fullName}`,
+            `N;CHARSET=UTF-8:${structuredName}`,
             `TITLE;CHARSET=UTF-8:${data.profession}`,
-            `ORG;CHARSET=UTF-8:${data.company}`,
+            `ORG;CHARSET=UTF-8:${organization}`,
             `TEL;TYPE=cell,text,voice;VALUE=uri:tel:${data.whatsapp}`,
             `EMAIL;TYPE=work:${data.email}`,
             `ADR;TYPE=work;LABEL="${data.address.replace(/"/g, "'")}":;;${data.address};;;;`,
@@ -421,7 +462,11 @@ export default function RegisterWizard() {
                 console.error("Error fetching existing user:", fetchError);
             }
 
-            const slug = existingUser?.slug || generateSlug(formData.name);
+            const slug = existingUser?.slug || generateSlug(
+                formData.profileType === 'persona'
+                    ? `${formData.firstName} ${formData.lastName}`.trim()
+                    : formData.businessName
+            );
 
             // 2. Subir imágenes (solo si hay nuevas)
             if (formData.photo) {
@@ -447,7 +492,19 @@ export default function RegisterWizard() {
 
             // 3. UPSERT: Inserta o Actualiza por email
             const upsertData = {
-                nombre: formData.name,
+                // Profile type and name fields
+                tipo_perfil: formData.profileType,
+                nombres: formData.profileType === 'persona' ? formData.firstName : null,
+                apellidos: formData.profileType === 'persona' ? formData.lastName : null,
+                nombre_negocio: formData.profileType === 'negocio' ? formData.businessName : null,
+                contacto_nombre: formData.profileType === 'negocio' ? formData.contactFirstName : null,
+                contacto_apellido: formData.profileType === 'negocio' ? formData.contactLastName : null,
+
+                // Legacy 'nombre' field for backwards compatibility
+                nombre: formData.profileType === 'persona'
+                    ? `${formData.firstName} ${formData.lastName}`.trim()
+                    : formData.businessName,
+
                 whatsapp: formData.whatsapp,
                 email: formData.email,
                 profesion: formData.profession,
@@ -517,7 +574,18 @@ export default function RegisterWizard() {
 
     const handleNext = () => {
         if (step === 1) {
-            if (!formData.name || !formData.whatsapp || !validateEmail(formData.email)) {
+            // Validate based on profile type
+            const nameValid = formData.profileType === 'persona'
+                ? (formData.firstName && formData.lastName)
+                : formData.businessName;
+
+            if (!nameValid || !formData.whatsapp || !validateEmail(formData.email)) {
+                if (!nameValid) {
+                    alert(formData.profileType === 'persona'
+                        ? 'Por favor ingresa tu nombre y apellido'
+                        : 'Por favor ingresa el nombre del negocio');
+                    return;
+                }
                 if (!validateEmail(formData.email)) setEmailError('Ingresa un correo válido');
                 return;
             }
@@ -555,11 +623,6 @@ export default function RegisterWizard() {
                         const amountInCents = currentPlanPrice * 100;
                         const transactionId = `reg_${Date.now()}_${formData.name.replace(/\s+/g, '_')}`;
 
-                        console.log("Inicializando PayPhone Box con:", {
-                            token: process.env.NEXT_PUBLIC_PAYPHONE_TOKEN?.substring(0, 10) + "...",
-                            amount: amountInCents,
-                            storeId: process.env.NEXT_PUBLIC_PAYPHONE_STORE_ID
-                        });
 
                         try {
                             const ppb = new PBox({
@@ -571,6 +634,8 @@ export default function RegisterWizard() {
                                 storeId: process.env.NEXT_PUBLIC_PAYPHONE_STORE_ID,
                                 reference: `Pago Plan ${formData.plan.toUpperCase()} - ${formData.name}`,
                                 lang: "es",
+                                responseUrl: typeof window !== 'undefined' ? `${window.location.origin}/registro` : "https://registrameya.vercel.app/registro",
+                                cancellationUrl: typeof window !== 'undefined' ? `${window.location.origin}/registro` : "https://registrameya.vercel.app/registro",
                                 onComplete: async (model: any, actions: any) => {
                                     console.log("Pago completado con éxito:", model);
                                     handleFinalSubmit('pagado');
@@ -676,19 +741,108 @@ export default function RegisterWizard() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="group">
-                                    <label className="block text-[10px] font-black text-navy/40 uppercase tracking-widest mb-3 ml-1">Nombre Completo</label>
-                                    <div className="relative">
-                                        <User className="absolute left-6 top-1/2 -translate-y-1/2 text-navy/20 group-focus-within:text-primary transition-colors" size={20} />
-                                        <input
-                                            type="text"
-                                            value={formData.name}
-                                            onChange={(e) => updateForm('name', e.target.value)}
-                                            placeholder="Ej. Manuel Pérez"
-                                            className="w-full bg-white/50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-16 py-5 outline-none font-bold text-navy transition-all shadow-sm"
-                                        />
+                                {/* Profile Type Selector */}
+                                <div>
+                                    <label className="block text-[10px] font-black text-navy/40 uppercase tracking-widest mb-3 ml-1">Tipo de Perfil</label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => updateForm('profileType', 'persona')}
+                                            className={cn(
+                                                "p-6 rounded-2xl border-2 transition-all",
+                                                formData.profileType === 'persona'
+                                                    ? "border-primary bg-primary/5"
+                                                    : "border-navy/10 bg-white/50 hover:border-navy/20"
+                                            )}
+                                        >
+                                            <User className="mx-auto mb-2 text-navy" size={32} />
+                                            <p className="font-black text-sm uppercase text-navy">Persona</p>
+                                            <p className="text-[9px] text-navy/40 mt-1 font-bold uppercase tracking-wider">Profesional individual</p>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => updateForm('profileType', 'negocio')}
+                                            className={cn(
+                                                "p-6 rounded-2xl border-2 transition-all",
+                                                formData.profileType === 'negocio'
+                                                    ? "border-primary bg-primary/5"
+                                                    : "border-navy/10 bg-white/50 hover:border-navy/20"
+                                            )}
+                                        >
+                                            <Briefcase className="mx-auto mb-2 text-navy" size={32} />
+                                            <p className="font-black text-sm uppercase text-navy">Negocio</p>
+                                            <p className="text-[9px] text-navy/40 mt-1 font-bold uppercase tracking-wider">Empresa o marca</p>
+                                        </button>
                                     </div>
                                 </div>
+
+                                {/* Conditional Fields: Persona */}
+                                {formData.profileType === 'persona' ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="group">
+                                            <label className="block text-[10px] font-black text-navy/40 uppercase tracking-widest mb-3 ml-1">Nombre(s)</label>
+                                            <div className="relative">
+                                                <User className="absolute left-6 top-1/2 -translate-y-1/2 text-navy/20 group-focus-within:text-primary transition-colors" size={20} />
+                                                <input
+                                                    type="text"
+                                                    value={formData.firstName}
+                                                    onChange={(e) => updateForm('firstName', e.target.value)}
+                                                    placeholder="Ej. César"
+                                                    className="w-full bg-white/50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-16 py-5 outline-none font-bold text-navy transition-all shadow-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="group">
+                                            <label className="block text-[10px] font-black text-navy/40 uppercase tracking-widest mb-3 ml-1">Apellido(s)</label>
+                                            <div className="relative">
+                                                <User className="absolute left-6 top-1/2 -translate-y-1/2 text-navy/20 group-focus-within:text-primary transition-colors" size={20} />
+                                                <input
+                                                    type="text"
+                                                    value={formData.lastName}
+                                                    onChange={(e) => updateForm('lastName', e.target.value)}
+                                                    placeholder="Ej. Reyes Jaramillo"
+                                                    className="w-full bg-white/50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-16 py-5 outline-none font-bold text-navy transition-all shadow-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    /* Conditional Fields: Negocio */
+                                    <>
+                                        <div className="group">
+                                            <label className="block text-[10px] font-black text-navy/40 uppercase tracking-widest mb-3 ml-1">Nombre del Negocio</label>
+                                            <div className="relative">
+                                                <Briefcase className="absolute left-6 top-1/2 -translate-y-1/2 text-navy/20 group-focus-within:text-primary transition-colors" size={20} />
+                                                <input
+                                                    type="text"
+                                                    value={formData.businessName}
+                                                    onChange={(e) => updateForm('businessName', e.target.value)}
+                                                    placeholder="Ej. La casa de la tía Omaira"
+                                                    className="w-full bg-white/50 border-2 border-transparent focus:border-primary/20 rounded-2xl px-16 py-5 outline-none font-bold text-navy transition-all shadow-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4">
+                                            <p className="text-[10px] font-black text-navy/60 uppercase tracking-widest mb-3">Persona de Contacto (Opcional)</p>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <input
+                                                    type="text"
+                                                    value={formData.contactFirstName}
+                                                    onChange={(e) => updateForm('contactFirstName', e.target.value)}
+                                                    placeholder="Nombre"
+                                                    className="bg-white/70 border-2 border-transparent focus:border-primary/20 rounded-xl px-4 py-3 outline-none font-bold text-navy text-sm transition-all"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={formData.contactLastName}
+                                                    onChange={(e) => updateForm('contactLastName', e.target.value)}
+                                                    placeholder="Apellido"
+                                                    className="bg-white/70 border-2 border-transparent focus:border-primary/20 rounded-xl px-4 py-3 outline-none font-bold text-navy text-sm transition-all"
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
 
                                 <div className="group">
                                     <label className="block text-[10px] font-black text-navy/40 uppercase tracking-widest mb-3 ml-1">WhatsApp</label>
@@ -1007,7 +1161,12 @@ export default function RegisterWizard() {
                                 ].map((tab) => (
                                     <button
                                         key={tab.id}
-                                        onClick={() => updateForm('paymentMethod', tab.id)}
+                                        onClick={() => {
+                                            updateForm('paymentMethod', tab.id);
+                                            if (tab.id === 'crypto') {
+                                                handleCryptoPayment();
+                                            }
+                                        }}
                                         className={cn(
                                             "flex-1 px-4 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap",
                                             formData.paymentMethod === tab.id ? "bg-primary text-white shadow-lg" : "text-white/40 hover:text-white/60"
@@ -1163,22 +1322,34 @@ export default function RegisterWizard() {
                                         </div>
 
                                         <div className="relative z-0">
-                                            <PayPalScriptProvider options={{ clientId: "test", currency: "USD" }}>
+                                            <PayPalScriptProvider options={{
+                                                clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "test",
+                                                currency: "USD",
+                                                intent: "capture",
+                                                "disable-funding": "paylater,venmo",
+                                                locale: "es_EC"
+                                            }}>
                                                 <PayPalButtons
                                                     style={{ layout: "vertical", shape: 'rect' }}
+                                                    fundingSource="card"
                                                     createOrder={(data, actions) => {
                                                         return actions.order.create({
-                                                            intent: "CAPTURE", // Explicit intent
+                                                            intent: "CAPTURE",
                                                             purchase_units: [
                                                                 {
                                                                     amount: {
                                                                         currency_code: "USD",
                                                                         value: currentPlanPrice.toString(),
                                                                     },
-                                                                    description: `Plan Profesional PRO - RegistrameYa`
+                                                                    description: `Plan Profesional PRO - RegistrameYa`,
+                                                                    custom_id: formData.email
                                                                 },
                                                             ],
-                                                        });
+                                                            application_context: {
+                                                                shipping_preference: "NO_SHIPPING",
+                                                                user_action: "PAY_NOW",
+                                                            }
+                                                        } as any);
                                                     }}
                                                     onApprove={async (data, actions) => {
                                                         if (actions.order) {
@@ -1201,37 +1372,27 @@ export default function RegisterWizard() {
                                         exit={{ opacity: 0, x: 10 }}
                                         className="bg-white/5 p-8 rounded-[40px] border border-white/10 text-center max-w-md mx-auto"
                                     >
+                                        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <ShieldCheck className="text-primary" size={32} />
+                                        </div>
                                         <h3 className="text-xl font-black uppercase italic tracking-tighter mb-4">Pago con Criptomonedas</h3>
-                                        <p className="text-sm text-white/60 mb-6">Paga con USDT, BTC, ETH de forma segura.</p>
+                                        <p className="text-sm text-white/60 mb-6">Paga de forma segura con USDT, BTC o ETH a través de Crossmint.</p>
 
-                                        {!cryptoPayment ? (
-                                            <button
-                                                onClick={handleCryptoPayment}
-                                                disabled={isCreatingCrypto}
-                                                className="bg-primary text-white w-full py-4 rounded-xl font-black uppercase tracking-widest shadow-orange hover:scale-105 transition-transform disabled:opacity-50"
-                                            >
-                                                {isCreatingCrypto ? <Loader2 className="animate-spin mx-auto" /> : 'Generar Dirección de Pago'}
-                                            </button>
+                                        {isCreatingCrypto ? (
+                                            <div className="bg-primary/20 text-primary p-6 rounded-2xl font-black uppercase tracking-widest flex flex-col items-center justify-center gap-4 animate-pulse border border-primary/30">
+                                                <Loader2 className="animate-spin w-8 h-8" />
+                                                <span>Abriendo Pasarela Segura...</span>
+                                            </div>
                                         ) : (
-                                            <div className="space-y-4">
-                                                <div className="bg-white p-4 rounded-xl mx-auto w-fit">
-                                                    <QRCodeSVG value={cryptoPayment.payAddress} size={150} />
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs text-white/40 uppercase font-black">Enviar exacto:</p>
-                                                    <p className="text-xl font-black text-primary">{cryptoPayment.payAmount} {cryptoPayment.payCurrency}</p>
-                                                </div>
-                                                <div className="bg-black/20 p-3 rounded-lg break-all">
-                                                    <p className="text-[10px] font-mono text-white/80">{cryptoPayment.payAddress}</p>
-                                                </div>
-                                                <button
-                                                    onClick={() => handleFinalSubmit('pendiente')}
-                                                    className="w-full bg-green-500 text-white py-3 rounded-xl font-bold text-sm hover:bg-green-600 transition-colors"
-                                                >
-                                                    Ya realicé el pago
-                                                </button>
+                                            <div className="p-6 rounded-2xl border border-white/10 bg-white/5">
+                                                <p className="text-xs text-white/40 uppercase font-black tracking-widest mb-2">Estado</p>
+                                                <p className="text-primary font-bold">ESPERANDO INICIO DE PAGO</p>
                                             </div>
                                         )}
+
+                                        <p className="text-[10px] text-white/30 mt-6 leading-tight max-w-[200px] mx-auto">
+                                            Serás redirigido al portal oficial de Crossmint para completar tu transacción.
+                                        </p>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
@@ -1271,14 +1432,39 @@ export default function RegisterWizard() {
 
                             <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl shadow-navy/5 border border-navy/5 relative overflow-hidden">
                                 <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary via-accent to-primary" />
-                                <div className="flex items-center gap-4 justify-center">
-                                    <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center">
-                                        <Mail size={32} />
+                                <div className="flex flex-col md:flex-row items-center gap-6 justify-center">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center">
+                                            <Mail size={32} />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="font-black text-navy text-lg leading-tight uppercase italic mb-0.5">Revisa tu correo</p>
+                                            <p className="text-sm font-bold text-navy/40 truncate max-w-[180px]">{formData.email}</p>
+                                        </div>
                                     </div>
-                                    <div className="text-left">
-                                        <p className="font-black text-navy text-lg leading-tight uppercase italic mb-0.5">Revisa tu correo</p>
-                                        <p className="text-sm font-bold text-navy/40 truncate max-w-[180px]">{formData.email}</p>
-                                    </div>
+
+                                    <button
+                                        onClick={async () => {
+                                            let photoB64 = null;
+                                            if (formData.photo) {
+                                                try {
+                                                    photoB64 = await fileToBase64(formData.photo);
+                                                } catch (e) { console.error("Error base64 photo", e); }
+                                            }
+                                            const vcfContent = generateVCard(formData, photoB64, formData.categories);
+                                            const blob = new Blob([vcfContent], { type: 'text/vcard' });
+                                            const url = window.URL.createObjectURL(blob);
+                                            const link = document.createElement('a');
+                                            link.href = url;
+                                            link.setAttribute('download', `${formData.name.replace(/\s+/g, '_')}.vcf`);
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+                                        }}
+                                        className="bg-navy text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary transition-all flex items-center gap-2 shadow-lg"
+                                    >
+                                        <FileText size={18} /> Descargar vCard
+                                    </button>
                                 </div>
                             </div>
 
@@ -1349,6 +1535,23 @@ export default function RegisterWizard() {
                 step={step}
                 isVisible={showVideoGuide}
                 onClose={() => setShowVideoGuide(false)}
+            />
+
+            <Script
+                src="https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.js"
+                type="module"
+                strategy="lazyOnload"
+                onLoad={() => {
+                    console.log("PayPhone Script (Oficial) cargado");
+                    setPayphoneInitialized(true);
+                }}
+                onError={() => {
+                    console.error("Error cargando script de PayPhone (Oficial)");
+                }}
+            />
+            <link
+                rel="stylesheet"
+                href="https://cdn.payphonetodoesposible.com/box/v1.1/payphone-payment-box.css"
             />
         </div>
     );

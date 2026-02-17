@@ -74,11 +74,47 @@ export default function VCardClient() {
 
         // Construcción manual robusta de vCard 3.0
         // Nota: Mantenemos 3.0 para máxima compatibilidad con iOS/Android nativos antiguos y nuevos.
+
+        // Determine full name and structured name based on profile type
+        let fullName = '';
+        let structuredName = '';
+        let organization = '';
+
+        if (data.tipo_perfil === 'negocio') {
+            // Business profile
+            fullName = data.nombre_negocio || data.nombre;
+            organization = data.nombre_negocio || data.empresa || '';
+
+            // If there's a contact person, use their name
+            if (data.contacto_nombre || data.contacto_apellido) {
+                structuredName = `${data.contacto_apellido || ''};${data.contacto_nombre || ''};;;`;
+            } else {
+                // No contact: leave N field empty
+                structuredName = ';;;;';
+            }
+        } else {
+            // Person profile (or legacy record)
+            if (data.nombres || data.apellidos) {
+                // New format with separated fields
+                fullName = `${data.nombres || ''} ${data.apellidos || ''}`.trim();
+                structuredName = `${data.apellidos || ''};${data.nombres || ''};;;`;
+            } else {
+                // Legacy format: use old 'nombre' field
+                fullName = data.nombre;
+                // Try to split intelligently (first word = first name, rest = last name)
+                const nameParts = data.nombre.split(' ');
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
+                structuredName = `${lastName};${firstName};;;`;
+            }
+            organization = data.empresa || '';
+        }
+
         let vcard = `BEGIN:VCARD
 VERSION:3.0
-FN:${data.nombre}
-N:${data.nombre.split(' ').slice(1).join(' ') || ''};${data.nombre.split(' ')[0] || ''};;;
-ORG:${data.empresa || ""}
+FN:${fullName}
+N:${structuredName}
+ORG:${organization}
 TITLE:${data.profesion || ""}
 TEL;TYPE=CELL,VOICE:${data.whatsapp}
 EMAIL;TYPE=WORK,INTERNET:${data.email || ""}

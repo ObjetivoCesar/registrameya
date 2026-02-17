@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
 
         // El cliente envía los nombres de columnas de DB directamente (nombre, email, etc.)
         const {
+            tipo_perfil, nombres, apellidos, nombre_negocio, contacto_nombre, contacto_apellido,
             nombre, email, whatsapp, profesion, empresa, bio, direccion,
             web, google_business, instagram, linkedin, facebook, tiktok, productos_servicios,
             plan, foto_url, comprobante_url, galeria_urls,
@@ -27,6 +28,12 @@ export async function POST(req: NextRequest) {
 
         // Upsert usando Service Role (bypass RLS)
         const upsertData = {
+            tipo_perfil: tipo_perfil || 'persona',
+            nombres: nombres,
+            apellidos: apellidos,
+            nombre_negocio: nombre_negocio,
+            contacto_nombre: contacto_nombre,
+            contacto_apellido: contacto_apellido,
             nombre: nombre,
             email: email,
             whatsapp: whatsapp,
