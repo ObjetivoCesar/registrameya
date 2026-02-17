@@ -161,7 +161,15 @@ export default function AdminDashboard() {
                 },
                 body: JSON.stringify({
                     id: editingRegistro.id,
-                    nombre: editingRegistro.nombre,
+                    tipo_perfil: editingRegistro.tipo_perfil || 'persona',
+                    nombres: editingRegistro.nombres,
+                    apellidos: editingRegistro.apellidos,
+                    nombre_negocio: editingRegistro.nombre_negocio,
+                    contacto_nombre: editingRegistro.contacto_nombre,
+                    contacto_apellido: editingRegistro.contacto_apellido,
+                    nombre: editingRegistro.tipo_perfil === 'negocio'
+                        ? editingRegistro.nombre_negocio
+                        : `${editingRegistro.nombres || ''} ${editingRegistro.apellidos || ''}`.trim(),
                     profesion: editingRegistro.profesion,
                     empresa: editingRegistro.empresa,
                     whatsapp: editingRegistro.whatsapp,
@@ -637,14 +645,97 @@ export default function AdminDashboard() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-6">
                                             <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/30 border-b border-white/5 pb-4">INFO PERSONAL</h4>
+                                            {/* Profile Type Selector */}
                                             <div>
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Nombre Completo</label>
-                                                <input
-                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all"
-                                                    value={editingRegistro.nombre || ''}
-                                                    onChange={e => setEditingRegistro({ ...editingRegistro, nombre: e.target.value })}
-                                                />
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-3 block ml-1">Tipo de Perfil</label>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setEditingRegistro({ ...editingRegistro, tipo_perfil: 'persona' })}
+                                                        className={cn(
+                                                            "p-4 rounded-xl border-2 transition-all text-xs font-black uppercase",
+                                                            (editingRegistro.tipo_perfil || 'persona') === 'persona'
+                                                                ? "border-primary bg-primary/10 text-primary"
+                                                                : "border-white/10 bg-white/5 text-white/40 hover:border-white/20"
+                                                        )}
+                                                    >
+                                                        👤 Persona
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setEditingRegistro({ ...editingRegistro, tipo_perfil: 'negocio' })}
+                                                        className={cn(
+                                                            "p-4 rounded-xl border-2 transition-all text-xs font-black uppercase",
+                                                            editingRegistro.tipo_perfil === 'negocio'
+                                                                ? "border-primary bg-primary/10 text-primary"
+                                                                : "border-white/10 bg-white/5 text-white/40 hover:border-white/20"
+                                                        )}
+                                                    >
+                                                        🏪 Negocio
+                                                    </button>
+                                                </div>
                                             </div>
+
+                                            {/* Conditional Fields */}
+                                            {(editingRegistro.tipo_perfil || 'persona') === 'persona' ? (
+                                                <>
+                                                    <div>
+                                                        <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Nombre(s)</label>
+                                                        <input
+                                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all"
+                                                            value={editingRegistro.nombres || ''}
+                                                            onChange={e => setEditingRegistro({ ...editingRegistro, nombres: e.target.value })}
+                                                            placeholder="Ej. César"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Apellido(s)</label>
+                                                        <input
+                                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all"
+                                                            value={editingRegistro.apellidos || ''}
+                                                            onChange={e => setEditingRegistro({ ...editingRegistro, apellidos: e.target.value })}
+                                                            placeholder="Ej. Reyes Jaramillo"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Empresa (Opcional)</label>
+                                                        <input
+                                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all"
+                                                            value={editingRegistro.empresa || ''}
+                                                            onChange={e => setEditingRegistro({ ...editingRegistro, empresa: e.target.value })}
+                                                        />
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div>
+                                                        <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Nombre del Negocio</label>
+                                                        <input
+                                                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold outline-none focus:border-primary/40 transition-all"
+                                                            value={editingRegistro.nombre_negocio || ''}
+                                                            onChange={e => setEditingRegistro({ ...editingRegistro, nombre_negocio: e.target.value })}
+                                                            placeholder="Ej. La casa de la tía Omaira"
+                                                        />
+                                                    </div>
+                                                    <div className="bg-primary/5 border border-primary/10 rounded-xl p-4">
+                                                        <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-3">Persona de Contacto (Opcional)</p>
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            <input
+                                                                className="bg-white/70 border border-white/10 rounded-xl px-4 py-3 font-bold outline-none focus:border-primary/40 text-sm"
+                                                                value={editingRegistro.contacto_nombre || ''}
+                                                                onChange={e => setEditingRegistro({ ...editingRegistro, contacto_nombre: e.target.value })}
+                                                                placeholder="Nombre"
+                                                            />
+                                                            <input
+                                                                className="bg-white/70 border border-white/10 rounded-xl px-4 py-3 font-bold outline-none focus:border-primary/40 text-sm"
+                                                                value={editingRegistro.contacto_apellido || ''}
+                                                                onChange={e => setEditingRegistro({ ...editingRegistro, contacto_apellido: e.target.value })}
+                                                                placeholder="Apellido"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
                                             <div>
                                                 <label className="text-[10px] font-black uppercase tracking-widest text-white/20 mb-2 block ml-1">Profesión</label>
                                                 <input
